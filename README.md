@@ -30,7 +30,7 @@ Application scaffold. The home page reports whether the API and the database are
 ## Prerequisites
 
 - Node.js 24 and npm 11
-- Docker Desktop with the Docker engine running, or any PostgreSQL 16 server you can point `DATABASE_URL` at
+- Docker Desktop, or Docker Engine inside WSL 2, or any PostgreSQL 16 server you can point `DATABASE_URL` at
 
 ## Setup
 
@@ -43,6 +43,17 @@ npm run db:test:up
 ```
 
 `npm install` also builds `shared/` and generates the Prisma client. Replace the placeholder credentials in `.env` and `.env.test` before starting the databases. The development database listens on host port 5435 and the test database on 5436.
+
+### Docker Engine inside WSL 2
+
+If Docker runs inside a WSL distribution instead of Docker Desktop, start the databases from a WSL shell in the repository folder. Node can stay on Windows, because WSL forwards the published ports to `localhost`.
+
+```bash
+docker compose up -d db
+docker compose --env-file .env.test up -d db-test
+```
+
+WSL stops its virtual machine, and the containers with it, when no WSL process is running. Keep a WSL terminal open while you develop or run tests, or the API reports the database as unreachable.
 
 ## Run
 
