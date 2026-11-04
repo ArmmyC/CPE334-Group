@@ -1,0 +1,10 @@
+// The data model is added by the System-Level SDS and the Sprint 1 feature contracts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
