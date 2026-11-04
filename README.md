@@ -29,20 +29,20 @@ Application scaffold. The home page reports whether the API and the database are
 
 ## Prerequisites
 
-- Node.js 24 and npm 11
+- Node.js 24 and npm 11 (`.nvmrc` pins Node 24, and `engines` in `package.json` states both)
 - Docker Desktop, or Docker Engine inside WSL 2, or any PostgreSQL 16 server you can point `DATABASE_URL` at
 
 ## Setup
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 cp .env.test.example .env.test
 npm run db:up
 npm run db:test:up
 ```
 
-`npm install` also builds `shared/` and generates the Prisma client. Replace the placeholder credentials in `.env` and `.env.test` before starting the databases. The development database listens on host port 5435 and the test database on 5436.
+`npm ci` installs the exact versions in `package-lock.json`, builds `shared/`, and generates the Prisma client. Replace the placeholder credentials in `.env` and `.env.test` before starting the databases. In each file the user, password, and database name in `DATABASE_URL` must match `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, or the API cannot log in to the database. The development database listens on host port 5435 and the test database on 5436.
 
 ### Docker Engine inside WSL 2
 
@@ -75,7 +75,7 @@ The client runs on http://localhost:5190 and proxies `/api` to the API on port 4
 | `npm run format:check`  | Checks formatting with Prettier                                                |
 | `npm run db:down`       | Stops the database containers                                                  |
 
-Server tests refuse to run unless `DATABASE_URL` in `.env.test` names a database ending in `_test`. The first `npm run test:e2e` needs `npx playwright install chromium`.
+Server tests and the E2E API refuse to run unless `DATABASE_URL` in `.env.test` names a database ending in `_test`. The first `npm run test:e2e` needs `npx playwright install chromium`.
 
 ## Engineering documents
 

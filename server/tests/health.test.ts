@@ -28,6 +28,18 @@ describe('GET /api/health', () => {
     expect(response.status).toBe(503);
     expect(response.body).toEqual({ status: 'error', database: 'unreachable' });
   });
+
+  it('reports 503 when the database check does not finish in time', async () => {
+    const app = createApp({
+      checkDatabase: () => new Promise<void>(() => {}),
+      healthTimeoutMs: 50,
+    });
+
+    const response = await request(app).get('/api/health');
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({ status: 'error', database: 'unreachable' });
+  });
 });
 
 describe('API error handling', () => {

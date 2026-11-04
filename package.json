@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "description": "CPE334 group project: Lab Equipment Borrowing System",
   "type": "module",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
   "workspaces": [
     "shared",
     "server",

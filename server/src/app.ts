@@ -4,9 +4,20 @@ import { apiError, type HealthResponse } from '@cpe334-group/shared';
 
 export type AppDependencies = {
   checkDatabase: () => Promise<void>;
+  healthTimeoutMs?: number;
 };
 
-export function createApp({ checkDatabase }: AppDependencies) {
+// Rejects when the promise has not settled in time, so a stalled database
+// gives a quick 503 instead of a hanging health check.
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`Timed out after ${timeoutMs} ms.`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+export function createApp({ checkDatabase, healthTimeoutMs = 2000 }: AppDependencies) {
   const app = express();
 
   app.use(helmet());
@@ -14,7 +25,7 @@ export function createApp({ checkDatabase }: AppDependencies) {
 
   app.get('/api/health', async (_request, response) => {
     try {
-      await checkDatabase();
+      await withTimeout(checkDatabase(), healthTimeoutMs);
       response.json({ status: 'ok', database: 'ok' } satisfies HealthResponse);
     } catch {
       response
