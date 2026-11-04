@@ -11,6 +11,7 @@ Issue: #1
 | 0.1 | 2026-11-03 | @ArmmyC | First draft for teammate review. Decisions marked Proposed need team agreement. |
 | 0.2 | 2026-11-03 | @ArmmyC | Review fixes before the PR: Sprint 1 now includes custodian copy status change (FR-16), active-loan view (FR-14), and history recording (FR-17). Invalid login, current-user endpoint, error shape, rate limit, renewal, borrowing limit, and due-date rules made precise. Added D-10, D-11, Q-06. |
 | 0.3 | 2026-11-03 | @ArmmyC | D-03 and D-05 to D-11 accepted by @ArmmyC. Q-01, Q-02, Q-03, and Q-06 resolved. Q-05 waits for the TA. Teammate review happens in the PR. |
+| 0.4 | 2026-11-04 | @ArmmyC | Fixes from the PR #6 review: D-03 and D-05 to D-11 set back to Proposed until both team members agree. FR-10 (borrower cancel) moved to Sprint 1, see D-12. |
 
 ## 1. Stakeholder problem and context
 
@@ -82,7 +83,7 @@ Planned sprint is the sprint that implements the requirement. The feature invent
 | FR-07 | A borrower can view a list of their own requests and loans with status, dates, and, for loans, the asset tag and due date. | 1 |
 | FR-08 | A custodian can view the pending requests for equipment in their assigned labs, oldest first. | 1 |
 | FR-09 | A custodian can record checkout of a pending request by selecting an available copy. This creates an active loan with a due date, marks the copy On loan, and marks the request Fulfilled. | 1 |
-| FR-10 | A borrower can cancel their own pending request. | 2 |
+| FR-10 | A borrower can cancel their own pending request. The request becomes Cancelled, and the borrower can then request that equipment type again. | 1 |
 | FR-11 | A custodian can reject a pending request in an assigned lab with a reason. | 2 |
 | FR-12 | A custodian can record the return of an active loan with a condition note. The copy becomes Available, or In maintenance if the custodian marks it damaged. | 2 |
 | FR-13 | The application shows an Overdue status on active loans whose due date has passed, for both the borrower and the custodian. | 2 |
@@ -106,7 +107,7 @@ In this document, "refused" means the system does not perform the action, change
 | BR-03 | A borrow request can be submitted only when the equipment type has at least one Available copy at that moment. Otherwise it is refused. | 1 |
 | BR-04 | For each equipment type, a borrower can have at most one Pending request or active loan at a time. A new request for a type the borrower already has Pending or on an active loan is refused. | 1 |
 | BR-05 | The due date of a loan is a calendar date in Asia/Bangkok: the checkout date in Asia/Bangkok plus the equipment type's loan period in days. The default loan period is 7 days. Allowed loan periods are 1 to 30 days, enforced by a database constraint from Sprint 1 and by validation on the edit form from Sprint 2. | 1 |
-| BR-06 | Request status changes are limited to Pending to Fulfilled (checkout), Pending to Rejected (custodian, reason required), and Pending to Cancelled (the requesting borrower). Fulfilled, Rejected, and Cancelled are final. Any other change is refused. | 1 (Fulfilled), 2 (Rejected, Cancelled) |
+| BR-06 | Request status changes are limited to Pending to Fulfilled (checkout), Pending to Rejected (custodian, reason required), and Pending to Cancelled (the requesting borrower). Fulfilled, Rejected, and Cancelled are final. Any other change is refused. | 1 (Fulfilled, Cancelled), 2 (Rejected) |
 | BR-07 | A loan can change only from Active to Returned, and a return can be recorded only once. | 2 |
 | BR-08 | Copy status changes are limited to the following. Available to On loan only by checkout. On loan to Available or In maintenance only by return. Available and In maintenance can switch both ways. Available or In maintenance to Retired. Retired is final. A custodian cannot retire a copy or put it in maintenance while it is On loan. | 1 (checkout, Available and In maintenance), 2 (return, Retired) |
 | BR-09 | An active loan is Overdue when the current calendar date in Asia/Bangkok is after its due date. A loan is not overdue on its due date. Overdue is calculated, not stored. | 2 |
@@ -155,23 +156,24 @@ In this document, "refused" means the system does not perform the action, change
 | --- | --- | --- | --- |
 | D-01 | Theme 2 is specialized as CPE department lab equipment lending. | Easy for testers and TAs to understand, and close to the team's own experience | Accepted 2026-11-03 |
 | D-02 | Individual copies are tracked by asset tag, not quantities. | Gives a clear exclusive rule (BR-01) and a meaningful concurrency test | Accepted 2026-11-03 |
-| D-03 | A request is for an equipment type. The custodian chooses the specific copy at checkout. | Borrowers do not care which unit they get, and custodians know which unit is on the shelf | Accepted 2026-11-03 |
+| D-03 | A request is for an equipment type. The custodian chooses the specific copy at checkout. | Borrowers do not care which unit they get, and custodians know which unit is on the shelf | Proposed |
 | D-04 | A request becomes a loan when the custodian records checkout. There is no separate approval step. Rejection is added in Sprint 2. | Matches the Sprint 1 example and keeps one fewer state | Accepted 2026-11-03 |
-| D-05 | Pending requests do not reserve a copy (BR-17). | Avoids copies being blocked by requests nobody collects | Accepted 2026-11-03 |
-| D-06 | Custodians are scoped to assigned labs (BR-15). | The brief says custodians manage authorized inventory. This also gives a meaningful authorization test | Accepted 2026-11-03 |
-| D-07 | Default loan period is 7 days, maximum 3 active loans per borrower, and an overdue loan blocks new borrowing. | Simple, testable limits that resemble common lending policies | Accepted 2026-11-03 |
-| D-08 | Access to another borrower's record or an unassigned lab returns 404, and a wrong role returns 403. | Does not reveal whether a record exists | Accepted 2026-11-03 |
-| D-09 | Renewal is done by the custodian, at most once, up to and including the due date, and extends from the current due date (BR-14). | Keeps renewal simple and controlled by staff | Accepted 2026-11-03 |
-| D-10 | A borrower can have only one Pending request or active loan per equipment type (BR-04), and Pending requests count toward the 3-loan limit (BR-10). | Spreads scarce equipment across students and makes the limits unambiguous | Accepted 2026-11-03 |
-| D-11 | History is recorded from Sprint 1 for every status change, and the custodian history view comes in Sprint 2 (FR-17). | Sprint 1 transitions would otherwise have no history for later UAT state checks | Accepted 2026-11-03 |
+| D-05 | Pending requests do not reserve a copy (BR-17). | Avoids copies being blocked by requests nobody collects | Proposed |
+| D-06 | Custodians are scoped to assigned labs (BR-15). | The brief says custodians manage authorized inventory. This also gives a meaningful authorization test | Proposed |
+| D-07 | Default loan period is 7 days, maximum 3 active loans per borrower, and an overdue loan blocks new borrowing. | Simple, testable limits that resemble common lending policies | Proposed |
+| D-08 | Access to another borrower's record or an unassigned lab returns 404, and a wrong role returns 403. | Does not reveal whether a record exists | Proposed |
+| D-09 | Renewal is done by the custodian, at most once, up to and including the due date, and extends from the current due date (BR-14). | Keeps renewal simple and controlled by staff | Proposed |
+| D-10 | A borrower can have only one Pending request or active loan per equipment type (BR-04), and Pending requests count toward the 3-loan limit (BR-10). | Spreads scarce equipment across students and makes the limits unambiguous | Proposed |
+| D-11 | History is recorded from Sprint 1 for every status change, and the custodian history view comes in Sprint 2 (FR-17). | Sprint 1 transitions would otherwise have no history for later UAT state checks | Proposed |
+| D-12 | Borrower cancel (FR-10) is in Sprint 1. | A Pending request can outlive the last Available copy (BR-03, BR-17). Without cancel, BR-04 would stop the borrower from requesting that type again until Sprint 2 | Proposed |
 
 ## 10. Open questions
 
 | ID | Question | Resolution |
 | --- | --- | --- |
-| Q-01 | Should pending requests reserve a copy? | Resolved by D-05, accepted 2026-11-03. |
-| Q-02 | What loan period and active-loan limit should apply? | Resolved by D-07, accepted 2026-11-03. |
-| Q-03 | Should an overdue loan block new borrowing? | Resolved by D-07, accepted 2026-11-03. |
-| Q-04 | Can a borrower cancel a pending request? | Yes, FR-10 in Sprint 2. |
+| Q-01 | Should pending requests reserve a copy? | Proposed in D-05. |
+| Q-02 | What loan period and active-loan limit should apply? | Proposed in D-07. |
+| Q-03 | Should an overdue loan block new borrowing? | Proposed in D-07. |
+| Q-04 | Can a borrower cancel a pending request? | Yes, FR-10 in Sprint 1. Proposed in D-12. |
 | Q-05 | Is lab-scoped custodian access an acceptable reading of "authorized inventory"? | Open. Ask the TA and record the answer here. |
-| Q-06 | Can a borrower borrow two copies of the same equipment type at once? | Resolved by D-10, accepted 2026-11-03. |
+| Q-06 | Can a borrower borrow two copies of the same equipment type at once? | Proposed in D-10. |
