@@ -104,7 +104,7 @@ The critical path is SR-03, F-01, F-02, F-03, F-04, F-05, six merges that altern
 
 - The release PR from `sprint-1` into `main` is reviewed and merged, and `v0.1.0` marks the release commit.
 - The domain journey works end to end: a borrower requests a type, a custodian records checkout, and the borrower sees the active loan with its asset tag and due date (TEST-E2E-01).
-- Each of the 45 planned Sprint 1 AC in [traceability.md](../traceability.md) section 4 is verified on the release commit by an automated test or, where the traceability names a manual check, a recorded manual check. Build, lint, and test results are recorded against that commit.
+- Each planned Sprint 1 AC in [traceability.md](../traceability.md) section 4 is verified on the release commit by an automated test or, where the traceability names a manual check, a recorded manual check. Build, lint, and test results are recorded against that commit.
 - Login, logout, and current user work for both roles. Protected endpoints return 401 without a session, and wrong-role and wrong-owner calls return 403 and 404.
 - A fresh clone reaches the seeded app with the README commands.
 
