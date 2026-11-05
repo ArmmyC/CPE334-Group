@@ -8,7 +8,7 @@ Issue: #2
 
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
-| 0.1 | 2026-11-04 | @ArmmyC | First matrix for teammate review. Every FR, BR, and NFR mapped to a feature or system responsibility and a sprint. Sprint 1 rows have planned AC and TEST IDs. Includes fixes from an independent check against the SRS and Part B. |
+| 0.1 | 2026-11-04 | @ArmmyC | First matrix for teammate review. Every FR, BR, and NFR mapped to a feature or system responsibility and a sprint. Sprint 1 rows have planned AC and TEST IDs. Includes fixes from an independent check against the SRS and Part B, and from the PR #9 review. |
 
 ## How to read this matrix
 
@@ -26,7 +26,7 @@ Issue: #2
 | FR-01 | Log in with email and password, generic refusal | F-01 | 1 | AC-F01-01, AC-F01-02 | TEST-F01-01, TEST-F01-02, TEST-E2E-02 |
 | FR-02 | Log out | F-01 | 1 | AC-F01-03 | TEST-F01-03, TEST-E2E-02 |
 | FR-03 | Current-user endpoint, 401 without session, identity kept after reload | F-01 | 1 | AC-F01-04 | TEST-F01-04, TEST-E2E-02 |
-| FR-04 | Catalog grouped by lab with available counts | F-02 | 1 | AC-F02-01 | TEST-F02-01 |
+| FR-04 | Catalog grouped by lab with available counts | F-02 | 1 | AC-F02-01, AC-F04-09 | TEST-F02-01, TEST-F04-09 |
 | FR-05 | Equipment type details | F-02 | 1 | AC-F02-02 | TEST-F02-02 |
 | FR-06 | Submit a borrow request | F-03 | 1 | AC-F03-01 | TEST-F03-01, TEST-E2E-01 |
 | FR-07 | View own requests and loans | F-03 | 1 | AC-F03-04 | TEST-F03-04, TEST-E2E-01 |
@@ -74,7 +74,7 @@ Issue: #2
 | NFR-01 | Salted scrypt password hashes | F-01 | 1 | 1 | AC-F01-05 | TEST-F01-05 |
 | NFR-02 | Every protected endpoint returns 401 without a session | SR-01 | 1 | Every sprint | AC-SR01-01 | TEST-SR01-01 |
 | NFR-03 | Wrong role gets 403, another owner's record or unassigned lab gets 404 | SR-01, applied in F-03, F-04, F-05, F-06 | 1 | Every sprint | AC-F03-05, AC-F03-09, AC-F04-06, AC-F04-07, AC-F05-02, AC-F06-03 | TEST-F03-05, TEST-F03-09, TEST-F04-06, TEST-F04-07, TEST-F05-02, TEST-F06-03 |
-| NFR-04 | Hashed session token in an httpOnly cookie, 8 hour idle and 24 hour absolute expiry, logout deletes it | F-01 | 1 | 1 | AC-F01-03, AC-F01-06, AC-F01-07 | TEST-F01-03, TEST-F01-06, TEST-F01-07 |
+| NFR-04 | Hashed session token in an httpOnly cookie, 8 hour idle and 24 hour absolute expiry, logout deletes it | F-01 | 1 | 1 | AC-F01-03, AC-F01-06, AC-F01-07, AC-F01-08 | TEST-F01-03, TEST-F01-06, TEST-F01-07, TEST-F01-08 |
 | NFR-05 | 10 simultaneous checkouts of one copy create exactly 1 loan | F-04 | 1 | 1 | AC-F04-05 | TEST-F04-05 |
 | NFR-06 | Login rate limit, HTTP 429 | F-15 | 2 | 2 | Sprint 2 contract | Sprint 2 contract |
 | NFR-07 | One error shape, field messages, list loading, empty, and error states | SR-02 | 1 | Every sprint | AC-SR02-01, AC-SR02-02, AC-SR02-03 | TEST-SR02-01, TEST-SR02-02, TEST-SR02-03 |
@@ -100,7 +100,8 @@ The Sprint 1 contracts refine the wording, inputs, and expected results. This li
 | AC-F01-04 | FR-03 | The current-user endpoint returns id, name, email, and role with a valid session, and 401 without one. After a page reload the UI still shows the logged-in user. | TEST-F01-04, TEST-E2E-02 | API, E2E |
 | AC-F01-05 | NFR-01 | The stored password is a salted scrypt hash, and the same password hashed twice gives different hashes. | TEST-F01-05 | Unit, API |
 | AC-F01-06 | NFR-04 | A session used just before 8 hours of inactivity is still accepted. A session is refused after 8 hours without use, and after 24 hours from login even when used. | TEST-F01-06 | API with a controllable clock |
-| AC-F01-07 | NFR-04 | The session cookie is httpOnly, and the session row stores a hash of the token, not the cookie value. | TEST-F01-07 | API and database |
+| AC-F01-07 | NFR-04 | The session cookie is httpOnly and `SameSite=Lax`, and also `Secure` when `NODE_ENV=production`. The session row stores a hash of the token, not the cookie value. | TEST-F01-07 | API and database, Unit for the production cookie options |
+| AC-F01-08 | NFR-04 | A state-changing request whose `Origin` header is not in `APP_ORIGIN` gets 403 `INVALID_ORIGIN` and changes nothing. The same request with an allowed `Origin` succeeds, and one with no `Origin` header is not refused by this check. | TEST-F01-08 | API |
 
 ### F-02 Equipment catalog
 
@@ -116,7 +117,7 @@ The Sprint 1 contracts refine the wording, inputs, and expected results. This li
 | --- | --- | --- | --- | --- |
 | AC-F03-01 | FR-06 | A borrower submits a request with an optional purpose note, and it is stored as Pending. | TEST-F03-01 | API, UI |
 | AC-F03-02 | BR-03 | A request for a type with no Available copy is refused, and nothing is stored. | TEST-F03-02 | API |
-| AC-F03-03 | BR-04 | A second request for a type the borrower already has Pending or on an active loan is refused. | TEST-F03-03 | API |
+| AC-F03-03 | BR-04 | A second request for a type the borrower already has Pending or on an active loan is refused. Two requests for the same type sent in parallel give one 201 and one 409 `DUPLICATE_REQUEST`, and only one Pending request is stored. | TEST-F03-03 | API |
 | AC-F03-04 | FR-07, BR-16 | A borrower sees their own requests and loans with status and dates, and asset tag and due date for loans. The list contains no other borrower's records. The loan part is verified once F-04 exists. | TEST-F03-04 | API, UI |
 | AC-F03-05 | BR-16, NFR-03 | A borrower who reads or cancels another borrower's request, or reads another borrower's loan, gets 404, receives no data, and nothing changes. | TEST-F03-05 | API |
 | AC-F03-06 | FR-10, BR-06 | A borrower cancels their own Pending request, it becomes Cancelled, and they can request that type again. | TEST-F03-06 | API, UI |
