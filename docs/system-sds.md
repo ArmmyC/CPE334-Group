@@ -8,7 +8,7 @@ Issue: #3
 
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
-| 0.1 | 2026-11-04 | @ArmmyC | First System-Level SDS for teammate review. Includes fixes from an independent check against Part C, the SRS, the scaffold code, and the Lab 5 kit. |
+| 0.1 | 2026-11-04 | @ArmmyC | First System-Level SDS for teammate review. Includes fixes from an independent check against Part C, the SRS, the scaffold code, and the Lab 5 kit, and from the PR #10 review. |
 
 ## 1. Purpose and scope
 
@@ -99,7 +99,11 @@ PostgreSQL row locks make the step 2 and step 4 updates succeed for only one tra
 
 **Constraint errors.** Prisma reports a unique violation as error `P2002` with the constraint name. The error mapper turns each named constraint into its 409 rule code (`DUPLICATE_REQUEST`, `COPY_NOT_AVAILABLE`, `INVALID_STATUS`, `DUPLICATE_ASSET_TAG`), so a constraint that catches a race never shows as a 500.
 
-**Connection pool.** Ten parallel checkouts wait on one row lock. The Prisma transaction options set `maxWait` to 10 seconds and `timeout` to 15 seconds, so waiting transactions get a 409 rather than a pool timeout (`P2028`). The NFR-05 test sends 10 checkouts of the same copy, each for a different borrower's Pending request, in parallel against the test database and expects exactly one 201 and nine 409 responses.
+**Connection pool.** Prisma's pool size comes from `connection_limit` in `DATABASE_URL`. Its default is `num_cpus * 2 + 1`, which is 3 on a 1 vCPU Cloud Run instance, so the design sets `connection_limit=5` in every environment. Cloud Run runs at most 3 instances (section 10), so the service uses at most 15 connections. That stays under the 25 a `db-f1-micro` Cloud SQL instance allows and leaves room for the migration job.
+
+Interactive transactions set `maxWait` to 5 seconds, the time to get a connection from the pool, and `timeout` to 10 seconds, the transaction's whole lifetime. Hitting either limit gives Prisma error `P2028`. The error mapper turns it into 503 `SERVICE_BUSY`, and nothing is changed. It is never a 409, because no rule was checked.
+
+A 409 comes only from the conditional updates. The NFR-05 test sends 10 checkouts of the same copy, each for a different borrower's Pending request, in parallel against the test database with the same pool size of 5. Five transactions start and the rest queue on the pool. The first transaction to update the copy at step 4 wins. Every other one changes 0 rows at step 4, either after waiting for the winner's row lock or after the winner has committed, and returns 409 `COPY_NOT_AVAILABLE`. Each transaction holds its connection for milliseconds, so the queue drains well inside `maxWait`. The test expects exactly one 201, nine 409 responses, and no 503.
 
 ## 3. Data model
 
@@ -162,6 +166,7 @@ Every service that changes a request, loan, or copy status calls one history fun
 - `npm run db:seed` loads the A-04 synthetic data: 2 labs, 2 custodians assigned to different labs, 3 borrowers, about 6 equipment types, and copies in Available, On loan, and In maintenance states, including one loan created through the normal checkout service so its history exists.
 - The seed is safe to run on every deploy. It only creates records that are missing, found by natural keys (email, lab name, type name in a lab, asset tag). It never updates an existing row, so copy statuses, requests, and loans changed by users survive a redeploy (NFR-10). It creates the sample loan only when the database has no loans yet.
 - Seed account passwords come from the `SEED_USER_PASSWORD` environment variable and are never written in code, logs, or screens. The seed refuses to run without it.
+- When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are set, the seed also creates a fourth borrower used only by the deploy smoke test, with `SMOKE_PASSWORD` as its password. It has no requests or loans. A separate account keeps smoke sessions off the demo accounts and lets its password change without touching them. Locally both variables are unset, so the account does not exist.
 - Tests reset the test database before each test file and create their own fixtures, so tests never depend on the development seed.
 
 ## 4. UI design
@@ -260,6 +265,7 @@ A successful response returns the resource or `{ "items": [...] }`. Every error 
 | 409 | A rule code, for example `COPY_NOT_AVAILABLE`, `COPY_MISMATCH`, `DUPLICATE_REQUEST`, `NO_AVAILABLE_COPY`, `INVALID_STATUS`, `DUPLICATE_ASSET_TAG` | A business rule refuses the change, including a unique constraint that catches a race (section 2.5). Nothing is changed. |
 | 429 | `TOO_MANY_ATTEMPTS` | Login rate limit (NFR-06, Sprint 2) |
 | 500 | `INTERNAL_ERROR` | An unexpected error. The response never contains a stack trace, SQL, or internal IDs. The server logs the details. |
+| 503 | `SERVICE_BUSY` | The database pool or a transaction timed out (Prisma `P2028`, section 2.5). Nothing is changed, and the client may retry. |
 
 Each contract lists the rule codes its endpoints return.
 
@@ -338,6 +344,13 @@ The session cookie is `SameSite=Lax`, so browsers do not send it on cross-site `
 | Tests and E2E | `http://127.0.0.1:5190`, the Playwright `baseURL`. API tests send no `Origin` header, so they are not affected. |
 | Cloud Run | Both service URLs Cloud Run assigns. The first deploy runs without the variable, then the deploy script reads the URLs with `gcloud run services describe` and sets them, and later deploys keep them. |
 
+When `APP_ORIGIN` is unset or empty, the API behaves as follows:
+
+- Outside production (development, tests, and CI), the API refuses to start, so a missing value in `.env`, `.env.test`, or the CI workflow is caught at once.
+- In production, the API starts with an empty allow list and refuses every state-changing request that carries an `Origin` header. Browsers send `Origin` on every `POST` and `PATCH`, so the UI cannot log in or change anything until the value is set. This fails closed for the short gap after the first deploy.
+- The deploy smoke test is not affected, because it calls the API from a script that sends no `Origin` header. The check refuses only a present `Origin` that is not on the list.
+- The deploy script sets `APP_ORIGIN` right after the first deploy, before the URL is shared.
+
 The Vite proxy's `changeOrigin` option rewrites the `Host` header but not `Origin`, so the check compares `Origin` with the allow list and never with `Host`.
 
 ## 8. Time handling
@@ -356,11 +369,11 @@ The Vite proxy's `changeOrigin` option rewrites the `Host` header but not `Origi
 
 | Variable | Used by | Secret | Development value comes from | Production value comes from |
 | --- | --- | --- | --- | --- |
-| `DATABASE_URL` | API, migrations, seed | Yes | `.env` (placeholder in `.env.example`) | Secret Manager |
+| `DATABASE_URL` | API, migrations, seed | Yes | `.env` and `.env.test` (placeholders in the example files). The F-04 work adds `connection_limit=5` to both examples (section 2.5). | Secret Manager, with `connection_limit=5` |
 | `PORT` | API | No | `.env`, default 4100 | Set by Cloud Run |
 | `NODE_ENV` | API (secure cookie, log format) | No | Unset (development) | `production` in the image |
 | `APP_ORIGIN` | API (Origin check) | No | `.env` and `.env.test`, see section 7.4. The F-01 work adds it to both example files. | Cloud Run environment variable with both service URLs (section 7.4) |
-| `SMOKE_EMAIL`, `SMOKE_PASSWORD` | Deploy smoke test only | Yes (password) | Not used | GitHub environment `demo` variable and secret |
+| `SMOKE_EMAIL`, `SMOKE_PASSWORD` | Seed (creates the smoke borrower, section 3.5) and the deploy smoke test | Yes (password) | Not used | `SMOKE_PASSWORD` in Secret Manager only, read by the migration job and by the smoke step through `gcloud secrets versions access`. `SMOKE_EMAIL` is a plain variable on the migration job and the GitHub environment `demo`. |
 | `SEED_USER_PASSWORD` | Seed only | Yes | `.env` | Secret Manager, read by the migration job only |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Local Docker Compose only | Yes (password) | `.env` and `.env.test` | Not used. Cloud SQL users are created by the Lab 5 deploy script. |
 
@@ -400,9 +413,9 @@ flowchart LR
 | Cloud Run service | Serves the SPA and `/api` from the one image. Minimum 0 and maximum 3 instances. Public access for the demo and Lab 6. |
 | Cloud SQL | PostgreSQL 16, smallest tier, storage auto-increase off, in the same region as Cloud Run (`asia-southeast1`). Connected through the Cloud Run Cloud SQL connector. |
 | Migrations | A Cloud Run job runs `prisma migrate deploy` and the seed before the service is updated. `prisma` is a runtime dependency for this reason. |
-| Secrets | `DATABASE_URL` and `SEED_USER_PASSWORD` in Secret Manager. The runtime service account can read only those secrets and connect to Cloud SQL. |
+| Secrets | `DATABASE_URL`, `SEED_USER_PASSWORD`, and `SMOKE_PASSWORD` in Secret Manager. The runtime service account can read only `DATABASE_URL` and connect to Cloud SQL. The migration job's account can also read the two seed passwords, and the deploy account can read `SMOKE_PASSWORD` for the smoke step. |
 | Pipeline | CI runs on every pull request into the sprint staging branch and `main`, and a failing check blocks the merge (NFR-11). A merge into `main` starts the deploy workflow, which waits for a manual approval on the `demo` environment, then builds, pushes, migrates, deploys by image digest, and runs a read-only smoke test. |
-| Smoke test | Read-only checks after each deploy: `GET /api/health`, `GET /api/ready`, `GET /` (the SPA), then a login as a dedicated smoke borrower (`SMOKE_EMAIL`, `SMOKE_PASSWORD`), `GET /api/equipment-types`, and logout. It never uses a custodian account and changes no data. |
+| Smoke test | Read-only checks after each deploy: `GET /api/health`, `GET /api/ready`, `GET /` (the SPA), then a login as a dedicated smoke borrower (`SMOKE_EMAIL`, `SMOKE_PASSWORD`), `GET /api/equipment-types`, and logout. It never uses a custodian account and changes no business data. Login adds a `session` row that logout deletes, and from Sprint 2 a `login_attempt` row. These rows are expected. |
 | Release identity | The image tag is the full commit SHA, and the run summary records the tag, digest, and URL, so the running revision maps to one commit. |
 | Rollback | Redeploy an earlier image tag through the same workflow. Migrations are additive, so an older image still works. |
 | Durability | All state, sessions included, is in Cloud SQL. Nothing is written to the container disk (NFR-10). |
