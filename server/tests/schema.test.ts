@@ -12,7 +12,6 @@ import {
 } from './helpers/fixtures.js';
 
 const uniqueViolation = { code: 'P2002' };
-const checkViolation = /check constraint/i;
 
 beforeEach(async () => {
   await resetDatabase();
@@ -28,8 +27,12 @@ describe('TEST-SR03-01 unique asset tags (AC-SR03-01, BR-12)', () => {
     const otherType = await createEquipmentType();
     await createCopy(type.id, 'EMB-0001');
 
-    await expect(createCopy(type.id, 'EMB-0001')).rejects.toMatchObject(uniqueViolation);
-    await expect(createCopy(otherType.id, 'EMB-0001')).rejects.toMatchObject(uniqueViolation);
+    const assetTagViolation = {
+      code: 'P2002',
+      meta: { target: expect.arrayContaining(['asset_tag']) },
+    };
+    await expect(createCopy(type.id, 'EMB-0001')).rejects.toMatchObject(assetTagViolation);
+    await expect(createCopy(otherType.id, 'EMB-0001')).rejects.toMatchObject(assetTagViolation);
     expect(await prisma.copy.count({ where: { assetTag: 'EMB-0001' } })).toBe(1);
   });
 });
@@ -57,7 +60,7 @@ describe('TEST-SR03-02 loan period range (AC-SR03-02, BR-05)', () => {
   it.each([0, 31])('refuses %i days and stores nothing', async (days) => {
     const lab = await createLab();
 
-    await expect(createType(lab.id, days)).rejects.toThrow(checkViolation);
+    await expect(createType(lab.id, days)).rejects.toThrow(/equipment_type_loan_period_days_check/);
     expect(await prisma.equipmentType.count()).toBe(0);
   });
 
@@ -139,6 +142,6 @@ describe('Supporting check: lower-case email', () => {
           createdAt: fixtureTime,
         },
       }),
-    ).rejects.toThrow(checkViolation);
+    ).rejects.toThrow(/user_email_lower_case_check/);
   });
 });

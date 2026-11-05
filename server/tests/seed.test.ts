@@ -67,15 +67,40 @@ describe('seed', () => {
   });
 
   it.each([
-    ['unset', {}],
-    ['shorter than 12 characters', { SEED_USER_PASSWORD: 'short' }],
-  ])('refuses a password that is %s and writes nothing', async (_label, env) => {
-    await expect(seed(prisma, env)).rejects.toThrow(/SEED_USER_PASSWORD/);
+    ['an unset seed password', {}, /SEED_USER_PASSWORD/],
+    ['a seed password under 12 characters', { SEED_USER_PASSWORD: 'short' }, /SEED_USER_PASSWORD/],
+    [
+      'the example placeholder',
+      { SEED_USER_PASSWORD: 'replace-with-a-seed-password' },
+      /SEED_USER_PASSWORD/,
+    ],
+    [
+      'a smoke email without a password',
+      { ...seedEnv, SMOKE_EMAIL: 'smoke@example.test' },
+      /SMOKE/,
+    ],
+    [
+      'a smoke password without an email',
+      { ...seedEnv, SMOKE_PASSWORD: 'smoke-password-for-tests' },
+      /SMOKE/,
+    ],
+    [
+      'a smoke email that is a demo account',
+      {
+        ...seedEnv,
+        SMOKE_EMAIL: 'Borrower1@example.com',
+        SMOKE_PASSWORD: 'smoke-password-for-tests',
+      },
+      /SMOKE_EMAIL/,
+    ],
+  ])('refuses %s and writes nothing', async (_label, env, message) => {
+    await expect(seed(prisma, env)).rejects.toThrow(message);
     expect(await prisma.user.count()).toBe(0);
+    expect(await prisma.lab.count()).toBe(0);
   });
 
-  it('creates the smoke borrower only when both smoke variables are set', async () => {
-    await seed(prisma, { ...seedEnv, SMOKE_EMAIL: 'smoke@example.test' });
+  it('creates the smoke borrower when both smoke variables are set', async () => {
+    await seed(prisma, seedEnv);
     expect(await prisma.user.count({ where: { email: 'smoke@example.test' } })).toBe(0);
 
     await seed(prisma, {
@@ -85,5 +110,25 @@ describe('seed', () => {
     });
     const smoke = await prisma.user.findUniqueOrThrow({ where: { email: 'smoke@example.test' } });
     expect(smoke.role).toBe('BORROWER');
+    expect(await prisma.labAssignment.count({ where: { custodianId: smoke.id } })).toBe(0);
+  });
+
+  it('updates only the smoke password hash when SMOKE_PASSWORD changes', async () => {
+    const smokeEnv = { ...seedEnv, SMOKE_EMAIL: 'smoke@example.test' };
+    await seed(prisma, { ...smokeEnv, SMOKE_PASSWORD: 'first-smoke-password' });
+    const before = await prisma.user.findUniqueOrThrow({ where: { email: 'smoke@example.test' } });
+    const demo = await prisma.user.findUniqueOrThrow({ where: { email: 'borrower1@example.com' } });
+    const counts = await countRows();
+
+    await seed(prisma, { ...smokeEnv, SMOKE_PASSWORD: 'second-smoke-password' });
+
+    const after = await prisma.user.findUniqueOrThrow({ where: { email: 'smoke@example.test' } });
+    expect(after.id).toBe(before.id);
+    expect(after.passwordHash).not.toBe(before.passwordHash);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { email: 'borrower1@example.com' } }))
+        .passwordHash,
+    ).toBe(demo.passwordHash);
+    expect(await countRows()).toEqual(counts);
   });
 });

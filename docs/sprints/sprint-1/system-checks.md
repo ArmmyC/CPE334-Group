@@ -36,8 +36,8 @@ Design: SDS sections 3.2 and 3.5
 
 - `npm run db:seed` loads the A-04 catalog: Embedded Systems Lab and Network Lab, one custodian assigned to each, three borrowers, six equipment types, and copies in Available and In maintenance states.
 - It only creates missing rows, found by natural keys (email, lab name, type name in a lab, asset tag), and never updates an existing row (NFR-10).
-- Passwords come from `SEED_USER_PASSWORD`, which must be at least 12 characters. The seed refuses to run without it and never prints it.
-- When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are both set, the seed also creates the smoke borrower (SDS section 3.5).
+- Passwords come from `SEED_USER_PASSWORD`, which must be at least 12 characters and not the `replace-` placeholder from `.env.example`. The seed refuses to run otherwise and never prints it.
+- When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are both set, the seed also creates the smoke borrower (SDS section 3.5). Its password hash is the one value the seed updates on every run, so the secret can be rotated. Setting only one of the two, or a smoke email that is a demo account, stops the seed before any write.
 - The On loan copy and its sample loan are not in this seed. SDS section 3.5 creates the sample loan through the checkout service, so F-04 adds it.
 
 ### Acceptance criteria
@@ -55,7 +55,7 @@ All database integration tests run against the test database. Each test file sta
 
 | Test | AC | Level | Precondition or input | Action | Expected result |
 | --- | --- | --- | --- | --- | --- |
-| TEST-SR03-01 | AC-SR03-01 | Database integration | A copy with asset tag `EMB-0001` exists | Insert another copy with asset tag `EMB-0001`, for the same type and for another type | Both inserts fail with a unique violation on `asset_tag`, and one copy with that tag remains |
+| TEST-SR03-01 | AC-SR03-01 | Database integration | A copy with asset tag `EMB-0001` exists | Insert another copy with asset tag `EMB-0001`, for the same type and for another type | Both inserts fail with `P2002` on `asset_tag`, and one copy with that tag remains |
 | TEST-SR03-02 | AC-SR03-02 | Database integration | A lab exists | Insert equipment types with loan periods 1, 30, 0, and 31, and one without a loan period | 1 and 30 are stored. 0 and 31 fail the check constraint and store nothing. The one without a value has 7. |
 | TEST-SR03-03 | AC-SR03-03 | Manual, recorded for the release | A fresh clone with Docker running | Follow the README setup and run commands | The app opens on port 5190, and a seeded borrower and custodian can see the seeded catalog once F-01 and F-02 exist. The count of commands is recorded and is at most 6. |
 | TEST-SR03-04 | AC-SR03-04 | Database integration | A borrower, a type, two copies, and requests to link the loans to | Insert a second `ACTIVE` loan for a copy that has one. Then mark the first loan `RETURNED` and insert again. Insert a second `PENDING` request for the same borrower and type. Then mark the first `CANCELLED` and insert again. | The second active loan and the second Pending request fail with unique violations. After the first record changes status, the new insert succeeds. A Pending request for another type or another borrower is never refused. |
@@ -65,7 +65,8 @@ Supporting checks that have no AC of their own:
 | Check | Level | Expected result |
 | --- | --- | --- |
 | Seed is repeatable | Database integration | Running the seed twice gives the same row counts. A copy status changed between the runs is not reset. |
-| Seed refuses a missing or short password | Unit | The seed stops with a clear message when `SEED_USER_PASSWORD` is unset or shorter than 12 characters, and writes nothing. |
+| Seed refuses bad configuration | Database integration | The seed stops with a clear message, and writes nothing, when `SEED_USER_PASSWORD` is unset, shorter than 12 characters, or the example placeholder, when only one smoke variable is set, or when the smoke email is a demo account. |
+| Smoke password rotation | Database integration | A second run with a new `SMOKE_PASSWORD` changes only the smoke account's hash. Row counts and demo account hashes stay the same. |
 | Password hash format | Unit | `hashPassword` returns `scrypt$16384$8$1$salt$hash` with a 16-byte salt and a 64-byte key, and hashing one password twice gives different strings. |
 | Lower-case email | Database integration | Inserting a user whose email has upper-case letters fails the check constraint. |
 
