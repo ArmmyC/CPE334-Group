@@ -9,6 +9,7 @@ Issue: #2
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-04 | @ArmmyC | First matrix for teammate review. Every FR, BR, and NFR mapped to a feature or system responsibility and a sprint. Sprint 1 rows have planned AC and TEST IDs. Includes fixes from an independent check against the SRS and Part B, and from the PR #9 review. |
+| 0.2 | 2026-11-06 | @ArmmyC | AC-SR03-04 and TEST-SR03-04 added by the SR-03 contract in `docs/sprints/sprint-1/system-checks.md` (#12). BR-01 and BR-04 list the database guard. |
 
 ## How to read this matrix
 
@@ -49,10 +50,10 @@ Issue: #2
 
 | Requirement | Summary | Feature or responsibility | Sprint | Planned AC | Planned tests |
 | --- | --- | --- | --- | --- | --- |
-| BR-01 | At most one active loan per copy, even under concurrent checkout | F-04 | 1 | AC-F04-05 | TEST-F04-05 |
+| BR-01 | At most one active loan per copy, even under concurrent checkout | F-04, SR-03 (database guard) | 1 | AC-F04-05, AC-SR03-04 | TEST-F04-05, TEST-SR03-04 |
 | BR-02 | Checkout only of an Available copy of the requested type in the same lab | F-04 | 1 | AC-F04-04 | TEST-F04-04 |
 | BR-03 | A request needs at least one Available copy | F-03 | 1 | AC-F03-02 | TEST-F03-02 |
-| BR-04 | One Pending request or active loan per type per borrower | F-03 | 1 | AC-F03-03 | TEST-F03-03 |
+| BR-04 | One Pending request or active loan per type per borrower | F-03, SR-03 (database guard) | 1 | AC-F03-03, AC-SR03-04 | TEST-F03-03, TEST-SR03-04 |
 | BR-05 | Due date is the Bangkok checkout date plus the loan period. Default loan period 7 days, allowed 1 to 30. | F-04 (due date), SR-03 (database constraint), F-12 (edit form, Sprint 2) | 1, 2 | AC-F04-03, AC-SR03-02 | TEST-F04-03, TEST-SR03-02 |
 | BR-06 | Allowed request transitions: Fulfilled and Cancelled (Sprint 1), Rejected (Sprint 2) | F-04 (Fulfilled), F-03 (Cancelled), F-08 (Rejected) | 1, 2 | AC-F04-02, AC-F04-08, AC-F03-06, AC-F03-07 | TEST-F04-02, TEST-F04-08, TEST-F03-06, TEST-F03-07 |
 | BR-07 | A loan is returned only once | F-09 | 2 | Sprint 2 contract | Sprint 2 contract |
@@ -172,6 +173,7 @@ The Sprint 1 contracts refine the wording, inputs, and expected results. This li
 | AC-SR03-01 | BR-12 | The database refuses a second copy with an existing asset tag. | TEST-SR03-01 | Database integration |
 | AC-SR03-02 | BR-05 | The database accepts loan periods of 1 and 30 days, refuses 0 and 31, and sets 7 days when none is given. | TEST-SR03-02 | Database integration |
 | AC-SR03-03 | NFR-09 | A fresh clone reaches the running app with seed data in at most 6 documented commands. | TEST-SR03-03 | Manual, recorded for the release |
+| AC-SR03-04 | BR-01, BR-04 | The database refuses a second active loan for one copy and a second Pending request for one borrower and type, and accepts a new one once the earlier record is no longer active or Pending. Added by the SR-03 contract (#12). | TEST-SR03-04 | Database integration |
 | AC-SR04-01 | NFR-10 | A request, a loan, and a copy status change made before an API and database restart are still there after it. | TEST-SR04-01 | Manual, recorded for the release |
 | AC-SR07-01 | NFR-13 | `.env.example` has placeholders only, the built client files contain no secret, and GitHub secret scanning is on with no open alerts. | TEST-SR07-01 | Manual review for the release |
 
