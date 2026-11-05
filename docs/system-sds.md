@@ -9,6 +9,7 @@ Issue: #3
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-04 | @ArmmyC | First System-Level SDS for teammate review. Includes fixes from an independent check against Part C, the SRS, the scaffold code, and the Lab 5 kit, and from the PR #10 review. |
+| 0.2 | 2026-11-06 | @ArmmyC | From the SR-03 work (#12): `P2002` reports columns, not the index name (2.5). The seed has no On loan sample until F-04, and the smoke account's hash follows `SMOKE_PASSWORD` (3.5). |
 
 ## 1. Purpose and scope
 
@@ -97,7 +98,7 @@ PostgreSQL row locks make the step 2 and step 4 updates succeed for only one tra
 
 **Request creation** (BR-03, BR-04, and later BR-10, BR-11). The transaction starts with `SELECT id FROM "user" WHERE id = :borrowerId FOR UPDATE`. This serializes all request creation for one borrower, and checkout locks the same row in its step 1. A checkout of the borrower's Pending request therefore cannot commit between the active-loan check and the Pending check. The same lock covers the Sprint 2 limits on active loans and overdue loans.
 
-**Constraint errors.** Prisma reports a unique violation as error `P2002` with the constraint name. The error mapper turns each named constraint into its 409 rule code (`DUPLICATE_REQUEST`, `COPY_NOT_AVAILABLE`, `INVALID_STATUS`, `DUPLICATE_ASSET_TAG`), so a constraint that catches a race never shows as a 500.
+**Constraint errors.** Prisma reports a unique violation, including a partial unique index, as error `P2002`, with `meta.target` listing the constrained columns rather than the index name. The error mapper uses the model and those columns to pick the 409 rule code (`DUPLICATE_REQUEST`, `COPY_NOT_AVAILABLE`, `INVALID_STATUS`, `DUPLICATE_ASSET_TAG`), so a constraint that catches a race never shows as a 500.
 
 **Connection pool.** Prisma's pool size comes from `connection_limit` in `DATABASE_URL`. Its default is `num_cpus * 2 + 1`, which is 3 on a 1 vCPU Cloud Run instance, so the design sets `connection_limit=5` in every environment. Cloud Run runs at most 3 instances (section 10), so the service uses at most 15 connections. That stays under the 25 a `db-f1-micro` Cloud SQL instance allows and leaves room for the migration job.
 
@@ -163,10 +164,10 @@ Every service that changes a request, loan, or copy status calls one history fun
 - Migrations are additive within a sprint, so an older image still works after a rollback (Lab 5). A destructive change gets its own reviewed migration and a note in the contract.
 - Prisma does not track the SQL-only indexes and checks. The reviewer of every new migration checks that it does not drop or recreate them, and the API tests for BR-01, BR-04, BR-05, and BR-12 fail if one goes missing.
 - Development: `prisma migrate dev`. Tests, CI, and production: `prisma migrate deploy`.
-- `npm run db:seed` loads the A-04 synthetic data: 2 labs, 2 custodians assigned to different labs, 3 borrowers, about 6 equipment types, and copies in Available, On loan, and In maintenance states, including one loan created through the normal checkout service so its history exists.
+- `npm run db:seed` loads the A-04 synthetic data: 2 labs, 2 custodians assigned to different labs, 3 borrowers, about 6 equipment types, and copies in Available and In maintenance states (SR-03, #12). F-04 adds the On loan copy and one sample loan created through the normal checkout service, so its history exists.
 - The seed is safe to run on every deploy. It only creates records that are missing, found by natural keys (email, lab name, type name in a lab, asset tag). It never updates an existing row, so copy statuses, requests, and loans changed by users survive a redeploy (NFR-10). It creates the sample loan only when the database has no loans yet.
 - Seed account passwords come from the `SEED_USER_PASSWORD` environment variable and are never written in code, logs, or screens. The seed refuses to run without it.
-- When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are set, the seed also creates a fourth borrower used only by the deploy smoke test, with `SMOKE_PASSWORD` as its password. It has no requests or loans. A separate account keeps smoke sessions off the demo accounts and lets its password change without touching them. Locally both variables are unset, so the account does not exist.
+- When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are set, the seed also creates a fourth borrower used only by the deploy smoke test, with `SMOKE_PASSWORD` as its password. It has no requests or loans. A separate account keeps smoke sessions off the demo accounts and lets its password change without touching them: the smoke account's password hash is the one value the seed updates on every run. Setting only one of the two variables stops the seed. Locally both variables are unset, so the account does not exist.
 - Tests reset the test database before each test file and create their own fixtures, so tests never depend on the development seed.
 
 ## 4. UI design

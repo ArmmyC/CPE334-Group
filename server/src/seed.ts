@@ -105,6 +105,10 @@ function requirePassword(name: string, value: string | undefined): string {
   if (!value || value.length < MIN_PASSWORD_LENGTH) {
     throw new Error(`${name} must be set to at least ${MIN_PASSWORD_LENGTH} characters.`);
   }
+  // The .env.example placeholders start with "replace-". Refuse them so no account gets a public password.
+  if (value.startsWith('replace-')) {
+    throw new Error(`${name} still has the placeholder value from the example file.`);
+  }
   return value;
 }
 
@@ -115,13 +119,18 @@ export async function seed(
 ): Promise<SeedSummary> {
   // Check every input before writing anything.
   const seedPassword = requirePassword('SEED_USER_PASSWORD', env.SEED_USER_PASSWORD);
-  const smokeUser =
-    env.SMOKE_EMAIL && env.SMOKE_PASSWORD
-      ? {
-          email: env.SMOKE_EMAIL.toLowerCase(),
-          password: requirePassword('SMOKE_PASSWORD', env.SMOKE_PASSWORD),
-        }
-      : undefined;
+  if (Boolean(env.SMOKE_EMAIL) !== Boolean(env.SMOKE_PASSWORD)) {
+    throw new Error('Set both SMOKE_EMAIL and SMOKE_PASSWORD, or neither.');
+  }
+  const smokeUser = env.SMOKE_EMAIL
+    ? {
+        email: env.SMOKE_EMAIL.toLowerCase(),
+        password: requirePassword('SMOKE_PASSWORD', env.SMOKE_PASSWORD),
+      }
+    : undefined;
+  if (smokeUser && users.some(({ email }) => email === smokeUser.email)) {
+    throw new Error('SMOKE_EMAIL must not be one of the seeded demo accounts.');
+  }
 
   const created: SeedSummary = { users: 0, labs: 0, types: 0, copies: 0 };
 
@@ -133,12 +142,7 @@ export async function seed(
     labIds.set(name, lab.id);
   }
 
-  const people = [
-    ...users.map((user) => ({ ...user, password: seedPassword })),
-    ...(smokeUser
-      ? [{ ...smokeUser, name: 'Smoke Test Borrower', role: 'BORROWER' as Role, lab: undefined }]
-      : []),
-  ];
+  const people = users.map((user) => ({ ...user, password: seedPassword }));
   for (const person of people) {
     let user = await prisma.user.findUnique({ where: { email: person.email } });
     if (!user) {
@@ -160,6 +164,27 @@ export async function seed(
         update: {},
         create: key,
       });
+    }
+  }
+
+  // The smoke borrower exists only for the deploy check, holds no business data, and is the one
+  // row the seed updates: its hash follows SMOKE_PASSWORD so the secret can be rotated (SDS 3.5).
+  if (smokeUser) {
+    const passwordHash = await hashPassword(smokeUser.password);
+    const existing = await prisma.user.findUnique({ where: { email: smokeUser.email } });
+    if (existing) {
+      await prisma.user.update({ where: { id: existing.id }, data: { passwordHash } });
+    } else {
+      await prisma.user.create({
+        data: {
+          email: smokeUser.email,
+          name: 'Smoke Test Borrower',
+          role: 'BORROWER',
+          passwordHash,
+          createdAt: now,
+        },
+      });
+      created.users += 1;
     }
   }
 
