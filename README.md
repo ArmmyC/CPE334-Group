@@ -15,7 +15,7 @@ Both students share requirements, design, testing, implementation, review, deplo
 
 ## Status
 
-Application scaffold. The home page reports whether the API and the database are reachable. Authentication, the data model, and domain features are added by their own Issues and contracts.
+Sprint 1 in progress. The scaffold, the data model, and the seed data are in place. The home page reports whether the API and the database are reachable. Authentication and domain features are added by their own Issues and contracts.
 
 ## Stack
 
@@ -34,24 +34,48 @@ Application scaffold. The home page reports whether the API and the database are
 
 ## Setup
 
+From a fresh clone to the running app with seed data:
+
 ```bash
 npm ci
 cp .env.example .env
+npm run db:setup
+npm run dev
+```
+
+`npm ci` installs the exact versions in `package-lock.json`, builds `shared/`, and generates the Prisma client. Before `npm run db:setup`, replace the placeholders in `.env`. The user, password, and database name in `DATABASE_URL` must match `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, and `SEED_USER_PASSWORD` must be at least 12 characters. It is the password of every seeded account.
+
+`npm run db:setup` starts the development database on host port 5435, applies the migrations, and loads the seed data. It is safe to run again: the seed only adds missing rows and never changes existing ones.
+
+To run the server tests, also create the test database on host port 5436:
+
+```bash
 cp .env.test.example .env.test
-npm run db:up
 npm run db:test:up
 ```
 
-`npm ci` installs the exact versions in `package-lock.json`, builds `shared/`, and generates the Prisma client. Replace the placeholder credentials in `.env` and `.env.test` before starting the databases. In each file the user, password, and database name in `DATABASE_URL` must match `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, or the API cannot log in to the database. The development database listens on host port 5435 and the test database on 5436.
+Replace the placeholders in `.env.test` the same way. The tests apply the migrations to the test database themselves.
+
+### Seeded accounts
+
+| Email                                                                     | Role      | Lab                  |
+| ------------------------------------------------------------------------- | --------- | -------------------- |
+| `custodian.embedded@example.com`                                          | Custodian | Embedded Systems Lab |
+| `custodian.network@example.com`                                           | Custodian | Network Lab          |
+| `borrower1@example.com`, `borrower2@example.com`, `borrower3@example.com` | Borrower  | Any                  |
+
+All seeded accounts use the `SEED_USER_PASSWORD` from your `.env`. The data is synthetic.
 
 ### Docker Engine inside WSL 2
 
 If Docker runs inside a WSL distribution instead of Docker Desktop, start the databases from a WSL shell in the repository folder. Node can stay on Windows, because WSL forwards the published ports to `localhost`.
 
 ```bash
-docker compose up -d db
-docker compose --env-file .env.test up -d db-test
+docker compose up -d --wait db
+docker compose --env-file .env.test up -d --wait db-test
 ```
+
+Then run `npm run db:deploy` and `npm run db:seed` on Windows instead of `npm run db:setup`.
 
 WSL stops its virtual machine, and the containers with it, when no WSL process is running. Keep a WSL terminal open while you develop or run tests, or the API reports the database as unreachable.
 
@@ -73,6 +97,10 @@ The client runs on http://localhost:5190 and proxies `/api` to the API on port 4
 | `npm run test:e2e`      | Starts the API on the test database and the client, then runs Playwright       |
 | `npm run lint`          | Runs ESLint                                                                    |
 | `npm run format:check`  | Checks formatting with Prettier                                                |
+| `npm run db:setup`      | Starts the development database, applies migrations, and loads the seed        |
+| `npm run db:migrate`    | Creates and applies a new migration after a `schema.prisma` change             |
+| `npm run db:deploy`     | Applies committed migrations to the development database                       |
+| `npm run db:seed`       | Adds any missing seed rows                                                     |
 | `npm run db:down`       | Stops the database containers                                                  |
 
 Server tests and the E2E API refuse to run unless `DATABASE_URL` in `.env.test` names a database ending in `_test`. The first `npm run test:e2e` needs `npx playwright install chromium`.
