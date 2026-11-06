@@ -10,6 +10,68 @@ This file is the contract for the Sprint 1 system responsibilities (SR-xx). It h
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-06 | @ArmmyC | SR-03 section, written before its tests (#12). Adds AC-SR03-04 for the BR-01 and BR-04 database guards. |
+| 0.2 | 2026-11-07 | @ArmmyC | SR-01 and SR-02 sections, written with the F-01 contract before their tests (#14). |
+
+## SR-01 Authorization
+
+Requirements: NFR-02, NFR-03
+Issue: #14, built with F-01
+Design: SDS sections 6.2 and 7.2
+
+### Design
+
+- `server/src/routes.ts` is the one route table. Each entry names its method, path, and access: `public`, `signed-in`, `BORROWER`, or `CUSTODIAN`. The app registers API routes only from this table.
+- A route that is not `public` gets `requireSession`, which returns 401 `UNAUTHENTICATED` for a missing, unknown, or expired session before any validation or service code runs.
+- A route with a role gets `requireRole` after `requireSession`, which returns 403 `FORBIDDEN` for the other role.
+- The public routes are `GET /api/health` and `POST /api/auth/login`. `/api/ready` joins them in Lab 5.
+- Ownership and lab scope (the 404 part of NFR-03) are applied in each feature's service queries and tested by the AC that traceability lists for NFR-03.
+
+### Acceptance criteria
+
+| AC | Requirements | Observable outcome |
+| --- | --- | --- |
+| AC-SR01-01 | NFR-02 | Every protected endpoint returns 401 and no private data when called without a session. |
+
+### Test specifications
+
+| Test | AC | Level | Precondition or input | Action | Expected result |
+| --- | --- | --- | --- | --- | --- |
+| TEST-SR01-01 | AC-SR01-01 | API | The route table, with path parameters replaced by `1` and an empty JSON body for `POST` and `PATCH` | Call every entry that is not `public`, with no cookie | Each returns 401 with exactly the shared error shape and code `UNAUTHENTICATED`, and no other data. The test fails if the table has no protected entry. |
+
+Supporting checks that have no AC of their own:
+
+| Check | Level | Expected result |
+| --- | --- | --- |
+| Wrong role | API | A route registered for one role returns 403 `FORBIDDEN` to a signed-in user with the other role. F-02 to F-06 test this again on their own endpoints. |
+| Public routes | API | The only public entries are `GET /api/health` and `POST /api/auth/login`. |
+
+## SR-02 Error shape and UI states
+
+Requirements: NFR-07
+Issue: #14 builds the API part and the login form. F-02 to F-06 add their forms and list screens.
+Design: SDS sections 4.2 and 5.3
+
+### Design
+
+- Request bodies are checked with the shared Zod schemas. A failure returns 400 `VALIDATION_ERROR` with `fields`, keyed by field name, holding the first message for each field.
+- One error mapper writes every error. Known errors keep their status and code. Invalid JSON is 400 `INVALID_JSON`, a body over 100kb is 413 `PAYLOAD_TOO_LARGE`, an unknown `/api` route is 404 `NOT_FOUND`, and anything else is 500 `INTERNAL_ERROR` with no stack trace or SQL. The details go to the server log.
+- The UI parses every error with `apiErrorSchema`, shows `fields` under the matching inputs, and shows `message` for other errors.
+
+### Acceptance criteria
+
+| AC | Requirements | Observable outcome |
+| --- | --- | --- |
+| AC-SR02-01 | NFR-07 | Every API error, including validation errors with `fields`, uses the shared error shape. |
+| AC-SR02-02 | NFR-07 | Every Sprint 1 form (login, borrow request, checkout copy selection, and copy status change) shows field messages next to the fields. |
+| AC-SR02-03 | NFR-07 | The catalog, my requests and loans, pending requests, and active loans screens show loading, empty, and error states. |
+
+### Test specifications
+
+| Test | AC | Level | Precondition or input | Action | Expected result |
+| --- | --- | --- | --- | --- | --- |
+| TEST-SR02-01 | AC-SR02-01 | API | None | Send a login body with missing fields, a malformed JSON body, a body over 100kb, a call to an unknown `/api` route, and a request that makes a handler throw | 400 `VALIDATION_ERROR` with `fields` for `email` and `password`, 400 `INVALID_JSON`, 413 `PAYLOAD_TOO_LARGE`, 404 `NOT_FOUND`, and 500 `INTERNAL_ERROR`. Every body matches `apiErrorSchema`, and the 500 body has no stack trace. |
+| TEST-SR02-02 | AC-SR02-02 | UI | Each Sprint 1 form | Submit invalid input, and render an API response with `fields` | The message appears under the matching field. F-01 covers the login form, and F-03, F-04, and F-06 add theirs. |
+| TEST-SR02-03 | AC-SR02-03 | UI | Each Sprint 1 list screen | Render while loading, with an empty list, and with an API error | A loading message, the empty sentence, and the error message with a Retry button. F-02 to F-05 add one test per screen. |
 
 ## SR-03 Data model, migrations, and reproducible seed
 
