@@ -87,7 +87,7 @@ Login validation, in `loginRequestSchema`:
 | Field | Rule | Message |
 | --- | --- | --- |
 | `email` | Required after trimming, at most 254 characters, a valid email address. Compared lower-case. | "Enter your email address." or "Enter a valid email address." |
-| `password` | Required, at most 200 characters | "Enter your password." |
+| `password` | Required, at most 200 characters | "Enter your password." or "Use a password of at most 200 characters." |
 
 A wrong email and a wrong password both return 401 `INVALID_CREDENTIALS` with the message "Email or password is incorrect.", and create no session (FR-01).
 

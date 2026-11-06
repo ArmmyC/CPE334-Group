@@ -11,7 +11,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/server.ts', 'src/e2e-server.ts', 'src/seed-cli.ts'],
+      exclude: ['src/server.ts', 'src/e2e-server.ts', 'src/e2e-seed.ts', 'src/seed-cli.ts'],
       reporter: ['text', 'html'],
     },
   },

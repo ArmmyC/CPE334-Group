@@ -10,7 +10,8 @@ const STATUS_TEXT: Record<SystemStatus, string> = {
   'api-unreachable': 'System status: the API is unreachable.',
 };
 
-export function HomePage() {
+// Shows whether the API and the database answer, from the scaffold's health check.
+export function SystemStatus() {
   const [status, setStatus] = useState<SystemStatus>('loading');
 
   useEffect(() => {
@@ -28,12 +29,8 @@ export function HomePage() {
   }, []);
 
   return (
-    <section>
-      <h1 className="h3">CPE Lab Equipment Borrowing</h1>
-      <p className="text-body-secondary">Borrow lab equipment from the CPE department.</p>
-      <p role="status" className={status === 'ok' ? 'text-success' : undefined}>
-        {STATUS_TEXT[status]}
-      </p>
-    </section>
+    <p role="status" className={status === 'ok' ? 'text-success mb-0' : 'mb-0'}>
+      {STATUS_TEXT[status]}
+    </p>
   );
 }

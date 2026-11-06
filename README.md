@@ -15,7 +15,7 @@ Both students share requirements, design, testing, implementation, review, deplo
 
 ## Status
 
-Sprint 1 in progress. The scaffold, the data model, and the seed data are in place. The home page reports whether the API and the database are reachable. Authentication and domain features are added by their own Issues and contracts.
+Sprint 1 in progress. The scaffold, the data model, the seed data, and sign-in (F-01) are in place. Seeded users log in, see their name and role, and log out. The login page also reports whether the API and the database are reachable. Domain features are added by their own Issues and contracts.
 
 ## Stack
 
@@ -43,7 +43,7 @@ npm run db:setup
 npm run dev
 ```
 
-`npm ci` installs the exact versions in `package-lock.json`, builds `shared/`, and generates the Prisma client. Before `npm run db:setup`, replace the placeholders in `.env`. The user, password, and database name in `DATABASE_URL` must match `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, and `SEED_USER_PASSWORD` must be at least 12 characters. It is the password of every seeded account.
+`npm ci` installs the exact versions in `package-lock.json`, builds `shared/`, and generates the Prisma client. Before `npm run db:setup`, replace the placeholders in `.env`. The user, password, and database name in `DATABASE_URL` must match `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, and `SEED_USER_PASSWORD` must be at least 12 characters. It is the password of every seeded account. `APP_ORIGIN` lists the origins the web app runs on, and the example value works for `npm run dev`. The API does not start without it.
 
 `npm run db:setup` starts the development database on host port 5435, applies the migrations, and loads the seed data. It is safe to run again: the seed only adds missing rows and never changes existing ones, apart from the optional smoke account's password.
 
@@ -54,7 +54,7 @@ cp .env.test.example .env.test
 npm run db:test:up
 ```
 
-Replace the placeholders in `.env.test` the same way. The tests apply the migrations to the test database themselves.
+Replace the placeholders in `.env.test` the same way, and keep its `APP_ORIGIN` for the E2E tests. The tests apply the migrations to the test database themselves.
 
 ### Seeded accounts
 
@@ -89,21 +89,21 @@ The client runs on http://localhost:5190 and proxies `/api` to the API on port 4
 
 ## Commands
 
-| Command                 | What it does                                                                   |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `npm run build`         | Builds `shared`, `server`, and `client`                                        |
-| `npm test`              | Runs the shared, server, and client tests. Server tests use the test database. |
-| `npm run test:coverage` | Runs server and client tests with a coverage report                            |
-| `npm run test:e2e`      | Starts the API on the test database and the client, then runs Playwright       |
-| `npm run lint`          | Runs ESLint                                                                    |
-| `npm run format:check`  | Checks formatting with Prettier                                                |
-| `npm run db:setup`      | Starts the development database, applies migrations, and loads the seed        |
-| `npm run db:migrate`    | Creates and applies a new migration after a `schema.prisma` change             |
-| `npm run db:deploy`     | Applies committed migrations to the development database                       |
-| `npm run db:seed`       | Adds any missing seed rows                                                     |
-| `npm run db:down`       | Stops the database containers                                                  |
+| Command                 | What it does                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `npm run build`         | Builds `shared`, `server`, and `client`                                                 |
+| `npm test`              | Runs the shared, server, and client tests. Server tests use the test database.          |
+| `npm run test:coverage` | Runs server and client tests with a coverage report                                     |
+| `npm run test:e2e`      | Resets and seeds the test database, starts the API and the client, then runs Playwright |
+| `npm run lint`          | Runs ESLint                                                                             |
+| `npm run format:check`  | Checks formatting with Prettier                                                         |
+| `npm run db:setup`      | Starts the development database, applies migrations, and loads the seed                 |
+| `npm run db:migrate`    | Creates and applies a new migration after a `schema.prisma` change                      |
+| `npm run db:deploy`     | Applies committed migrations to the development database                                |
+| `npm run db:seed`       | Adds any missing seed rows                                                              |
+| `npm run db:down`       | Stops the database containers                                                           |
 
-Server tests and the E2E API refuse to run unless `DATABASE_URL` in `.env.test` names a database ending in `_test`. The first `npm run test:e2e` needs `npx playwright install chromium`.
+Server tests, the E2E seed, and the E2E API refuse to run unless `DATABASE_URL` in `.env.test` names a database ending in `_test`. The E2E seed uses a fixed test-only password from `e2e/seed-data.ts`, never your `SEED_USER_PASSWORD`. The first `npm run test:e2e` needs `npx playwright install chromium`.
 
 ## Engineering documents
 
