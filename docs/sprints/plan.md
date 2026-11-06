@@ -8,7 +8,7 @@ Issue: #4
 
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
-| 0.1 | 2026-11-05 | @ArmmyC | First three-sprint plan for teammate review. The owner allocation and dated targets are proposals until the review accepts them. Includes fixes from an independent check against the Deliverable 1 and 2 briefs, the course calendar, and the merged documents. |
+| 0.1 | 2026-11-05 | @ArmmyC | First three-sprint plan for teammate review. The owner allocation and dated targets are proposals until the review accepts them. Includes fixes from an independent check against the Deliverable 1 and 2 briefs, the course calendar, and the merged documents, and from the PR #11 review: a second Sprint 1 decision point, the release PR owner, the Prisma 7 upgrade on 15 Nov, the Lab 7 change on 28 Nov, and the Lab 7 lead moved to @ArmmyC. |
 
 ## 1. How to read this plan
 
@@ -25,7 +25,7 @@ Issue: #4
 | 2 | 9 Nov to 24 Nov | `sprint-2`, cut from `main` after `v0.1.0` | Sprint 2 complete before Deliverable 2 |
 | 3 | 18 Nov to 13 Dec | `sprint-3`, cut from `sprint-2` once F-10 merges (target 18 Nov) | Progress at Deliverable 2 (29 Nov), final delivery 13 Dec |
 
-Sprint 3 starts while Sprint 2 finishes because the course calendar asks for a substantially complete product by 29 Nov, and the final examination period (1 to 11 Dec) leaves only fixes and verification after it. After each later Sprint 2 merge, `sprint-2` is merged forward into `sprint-3`.
+Sprint 3 starts while Sprint 2 finishes because the course calendar asks for a substantially complete product by 29 Nov, and the final examination period (1 to 11 Dec) leaves only fixes and verification after it. After each later Sprint 2 merge, `sprint-2` is merged forward into `sprint-3` on the same day.
 
 The SDS (section 10) deploys only from `main`, and the labs need deployed releases before 29 Nov. Every merge into `main` is a reviewed release PR from a staging branch, which holds only complete, reviewed work, and gets a tag:
 
@@ -44,7 +44,7 @@ Group labs run alongside the sprints in the same repository:
 | --- | --- | --- | --- | --- |
 | Lab 5 | 15 Nov | Docker image, CI on every PR, GCP deployment (SDS section 10) | @Bank848 | Sprint 2 (SR-04 on GCP, SR-05) |
 | Lab 6 | 22 Nov | Cross-team UAT and defect management | @ArmmyC | Sprint 2 |
-| Lab 7 | 29 Nov | Maintenance change, metrics, release readiness | @Bank848 | Sprint 3 candidate |
+| Lab 7 | 29 Nov | Maintenance change, metrics, release readiness | @ArmmyC | Sprint 3 candidate |
 
 The lead runs the lab and its PRs, and the other member reviews and joins the required group activities.
 
@@ -67,7 +67,7 @@ A borrower and a custodian log in with seeded accounts, and the borrower's reque
 | F-04 | Custodian checkout with Bangkok due date | @Bank848 | F-03, F-07 | 8 Nov morning |
 | F-05 | Active loan list | @ArmmyC | F-04 | 8 Nov afternoon |
 | SR-01, SR-02, SR-04, SR-07 | Checks in `system-checks.md` | @ArmmyC | F-01 | 8 Nov |
-| Release | Release PR, `v0.1.0`, recorded build and test results | Both | Everything above | 8 Nov evening |
+| Release | Release PR, `v0.1.0`, recorded build and test results | @ArmmyC writes, @Bank848 reviews | Everything above | 8 Nov evening |
 
 The gaps on the critical path are used for contracts, so nobody waits idle:
 
@@ -119,11 +119,18 @@ The critical path is SR-03, F-01, F-02, F-03, F-04, F-05, six merges that altern
 
 ### 3.6 If Sprint 1 runs short
 
-Three days remain for seven features, so the plan sets a decision point. If SR-03 and F-01 are not merged by the end of 6 Nov, both members decide on 7 Nov morning, in Issue #4, what moves:
+Three days remain for seven features, and F-04, the hardest feature, comes last. The plan sets two decision points, each recorded in Issue #4:
 
-1. F-07 history recording (FR-17) moves to Sprint 2 first, as agreed in the PR #6 review. It needs an SRS change to FR-17 and D-11 approved by both members, and AC-F07-01 and AC-F07-02 move with it. F-03, F-04, and F-06 then add their history writes in Sprint 2, and the Lab 6 UAT case that D-11 gives as the reason for early recording would see no Sprint 1 history.
-2. Proposed in this plan for the review to accept: F-06 copy maintenance status moves second, because it is not part of the domain journey. It needs an SRS change to FR-16 and BR-08.
-3. Proposed in this plan: F-01 to F-05 and the access checks are not cut. If one is still incomplete on 8 Nov, the release discloses it as incomplete under the Product Definition of Done instead of claiming it.
+- End of 6 Nov: if SR-03 and F-01 are not merged, both members decide on 7 Nov morning what moves.
+- End of 7 Nov: if F-03 is not merged, or F-02 and F-06 are both still open, both members decide that evening what moves. @ArmmyC then writes the F-04 concurrency test while @Bank848 writes the checkout service, so F-04 can still merge on 8 Nov.
+
+What moves, in this order, as agreed in the PR #6 and PR #11 reviews:
+
+1. F-07 history recording (FR-17) moves to Sprint 2 first. It needs an SRS change to FR-17 and D-11 approved by both members, and AC-F07-01 and AC-F07-02 move with it. F-03, F-04, and F-06 then add their history writes in Sprint 2, and the Lab 6 UAT case that D-11 gives as the reason for early recording would see no Sprint 1 history.
+2. F-06 copy maintenance status moves second, because it is not part of the domain journey. It needs an SRS change to FR-16 and BR-08.
+3. F-01 to F-05 and the access checks are not cut. If one is still incomplete on 8 Nov, the release discloses it as incomplete under the Product Definition of Done instead of claiming it.
+
+@ArmmyC writes the release PR in every case. It opens as a draft on 8 Nov at 18:00 with what is merged, work merged by 21:00 goes into `v0.1.0`, and anything still open is listed as incomplete in the PR and the Deliverable 1 report.
 
 ## 4. Sprint 2: core expansion
 
@@ -135,8 +142,8 @@ Complete the loan lifecycle and the custodian's inventory tools under engineerin
 
 | ID | Item | Proposed owner | Depends on | Merge target |
 | --- | --- | --- | --- | --- |
-| #8 | Prisma 7 upgrade, once the CI gate runs | @ArmmyC | SR-05 | 17 Nov |
 | SR-05, SR-04 (GCP) | CI quality gate, then GCP deployment with durability after restart and redeploy (Lab 5) | @Bank848 | Sprint 1 release | 15 Nov |
+| #8 | Prisma 7 upgrade, after `v0.2.0-rc.1` is tagged so the Lab 5 release does not carry it | @ArmmyC | SR-05 | 15 Nov |
 | F-09 | Loan return | @ArmmyC | F-04 | 14 Nov |
 | F-10 | Overdue status | @ArmmyC | F-05 | 17 Nov |
 | F-08 | Request rejection | @Bank848 | F-04 | 17 Nov |
@@ -171,7 +178,7 @@ Finish the product baseline before the examination period, then harden it for th
 | F-19 | Inventory summary | @Bank848 | F-05, F-10, F-13 | 27 Nov |
 | F-17 | Search and filter | @Bank848 | F-02, F-04, F-05 | 28 Nov |
 | F-18 | Copy and borrower loan history | @ArmmyC | F-07, F-09 | 28 Nov |
-| Lab 7 change | The maintenance change chosen in Lab 7 | @Bank848 | Lab 7 sheet | 29 Nov |
+| Lab 7 change | The maintenance change chosen in Lab 7, merged a day before the candidate so CI failures can be fixed | @ArmmyC | Lab 7 sheet | 28 Nov |
 | SR-08 | Response time of the catalog and request list on the deployed app | Both | F-02, F-03, deployed release | 30 Nov |
 | Hardening | Full regression, UAT re-tests, defect fixes, README and setup review, final documents and video | Both | All features | 12 to 13 Dec |
 
@@ -205,8 +212,8 @@ SR-04 is established locally in Sprint 1 and verified again on GCP in Sprint 2. 
 
 | Member | Sprint 1 | Sprint 2 | Sprint 3 | Labs |
 | --- | --- | --- | --- | --- |
-| @ArmmyC | SR-03, F-01, F-03, F-05, `system-checks.md`, release PR | #8, F-09, F-10, F-11, F-14, F-15 | F-16, F-18 | Lab 6 lead |
-| @Bank848 | F-07, F-02, F-06, F-04 | SR-05, SR-04 on GCP, F-08, F-12, F-13 | F-17, F-19, SR-08 specification | Lab 5 and Lab 7 lead |
+| @ArmmyC | SR-03, F-01, F-03, F-05, `system-checks.md`, release PR | #8, F-09, F-10, F-11, F-14, F-15 | F-16, F-18, Lab 7 change | Lab 6 and Lab 7 lead |
+| @Bank848 | F-07, F-02, F-06, F-04 | SR-05, SR-04 on GCP, F-08, F-12, F-13 | F-17, F-19, SR-08 specification | Lab 5 lead |
 
 Each member reviews every PR the other opens. Pair work, such as SR-06, SR-08, and the final hardening, is named in its Issue and PR.
 
@@ -214,11 +221,11 @@ Each member reviews every PR the other opens. Pair work, such as SR-06, SR-08, a
 
 | Risk | Effect | Response |
 | --- | --- | --- |
-| Sprint 1 has three days left for seven features | Incomplete Sprint 1 release | Day schedule in 3.2, and the 6 Nov decision point in 3.6 |
+| Sprint 1 has three days left for seven features | Incomplete Sprint 1 release | Day schedule in 3.2, and the 6 Nov and 7 Nov decision points in 3.6 |
 | Lab 5 needs a GCP project with working billing | Deployment slips past 15 Nov | Set up the project on 9 Nov, and ask the TA at once if no account works |
 | Q-05 (lab-scoped custodian access) is still open with the TA | BR-15 and SR-01 change | Record the TA's answer in the SRS before the Sprint 1 release PR. A change goes through the SRS and traceability before code changes. |
 | Sprint 2 and the labs share three weeks | Sprint 3 progress is thin at 29 Nov | Sprint 3 contracts by 22 Nov, and `sprint-3` starts on 18 Nov |
 | Final exams take 1 to 11 Dec | Little time after 29 Nov | All features are targeted by 28 Nov, and only SR-08 and hardening come after |
-| Prisma 7 upgrade (#8) touches every database call | Regressions mid-sprint | Done right after the Lab 5 CI gate exists, before most Sprint 2 features merge |
+| Prisma 7 upgrade (#8) touches every database call | Regressions mid-sprint | Merged on 15 Nov, right after the CI gate and the Lab 5 tag, so only F-09 merges before it and every later feature is tested on Prisma 7 |
 
 A change to sprint scope, order, owner, or target date is agreed by both members in an Issue or PR, recorded in this file's version history, and reflected in [features.md](../features.md) and [traceability.md](../traceability.md) in the same PR.
