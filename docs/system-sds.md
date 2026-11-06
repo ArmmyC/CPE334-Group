@@ -9,7 +9,7 @@ Issue: #3
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-04 | @ArmmyC | First System-Level SDS for teammate review. Includes fixes from an independent check against Part C, the SRS, the scaffold code, and the Lab 5 kit, and from the PR #10 review. |
-| 0.2 | 2026-11-06 | @ArmmyC | From the SR-03 work (#12): `P2002` reports columns, not the index name (2.5). The seed has no On loan sample until F-04, and the smoke account's hash follows `SMOKE_PASSWORD` (3.5). |
+| 0.2 | 2026-11-06 | @ArmmyC | From the SR-03 work (#12): `P2002` reports columns, not the index name (2.5). The seed has no On loan sample until F-04, the smoke account's hash follows `SMOKE_PASSWORD`, and overlapping seed runs both finish (3.5). |
 
 ## 1. Purpose and scope
 
@@ -165,7 +165,7 @@ Every service that changes a request, loan, or copy status calls one history fun
 - Prisma does not track the SQL-only indexes and checks. The reviewer of every new migration checks that it does not drop or recreate them, and the API tests for BR-01, BR-04, BR-05, and BR-12 fail if one goes missing.
 - Development: `prisma migrate dev`. Tests, CI, and production: `prisma migrate deploy`.
 - `npm run db:seed` loads the A-04 synthetic data: 2 labs, 2 custodians assigned to different labs, 3 borrowers, about 6 equipment types, and copies in Available and In maintenance states (SR-03, #12). F-04 adds the On loan copy and one sample loan created through the normal checkout service, so its history exists.
-- The seed is safe to run on every deploy. It only creates records that are missing, found by natural keys (email, lab name, type name in a lab, asset tag). It never updates an existing row, so copy statuses, requests, and loans changed by users survive a redeploy (NFR-10). It creates the sample loan only when the database has no loans yet.
+- The seed is safe to run on every deploy. It only creates records that are missing, found by natural keys (email, lab name, type name in a lab, asset tag). It never updates an existing row, except the smoke account's password hash below, so copy statuses, requests, and loans changed by users survive a redeploy (NFR-10). Each insert skips existing rows in the same statement, so two overlapping runs both finish. It creates the sample loan only when the database has no loans yet.
 - Seed account passwords come from the `SEED_USER_PASSWORD` environment variable and are never written in code, logs, or screens. The seed refuses to run without it.
 - When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are set, the seed also creates a fourth borrower used only by the deploy smoke test, with `SMOKE_PASSWORD` as its password. It has no requests or loans. A separate account keeps smoke sessions off the demo accounts and lets its password change without touching them: the smoke account's password hash is the one value the seed updates on every run. Setting only one of the two variables stops the seed. Locally both variables are unset, so the account does not exist.
 - Tests reset the test database before each test file and create their own fixtures, so tests never depend on the development seed.

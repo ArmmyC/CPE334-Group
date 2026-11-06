@@ -45,7 +45,7 @@ npm run dev
 
 `npm ci` installs the exact versions in `package-lock.json`, builds `shared/`, and generates the Prisma client. Before `npm run db:setup`, replace the placeholders in `.env`. The user, password, and database name in `DATABASE_URL` must match `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, and `SEED_USER_PASSWORD` must be at least 12 characters. It is the password of every seeded account.
 
-`npm run db:setup` starts the development database on host port 5435, applies the migrations, and loads the seed data. It is safe to run again: the seed only adds missing rows and never changes existing ones.
+`npm run db:setup` starts the development database on host port 5435, applies the migrations, and loads the seed data. It is safe to run again: the seed only adds missing rows and never changes existing ones, apart from the optional smoke account's password.
 
 To run the server tests, also create the test database on host port 5436:
 

@@ -2,8 +2,9 @@ import type { CopyStatus, PrismaClient, Role } from '@prisma/client';
 import { hashPassword } from './auth/password.js';
 
 // Synthetic seed data from SRS assumption A-04. Every person and asset tag here is invented (A-05).
-// The seed only creates missing rows and never updates existing ones, so it is safe on every deploy
-// (SDS section 3.5, NFR-10). The sample On loan copy and its loan are added by F-04 through checkout.
+// The seed only creates missing rows and never updates existing ones, apart from the smoke borrower's
+// password hash, so it is safe on every deploy (SDS section 3.5, NFR-10). The sample On loan copy and
+// its loan are added by F-04 through checkout.
 
 export type SeedEnv = {
   SEED_USER_PASSWORD?: string;
@@ -132,87 +133,93 @@ export async function seed(
     throw new Error('SMOKE_EMAIL must not be one of the seeded demo accounts.');
   }
 
+  // Every insert is one `INSERT ... ON CONFLICT DO NOTHING` (skipDuplicates), so a row that exists,
+  // or that an overlapping run inserts first, is skipped instead of failing the run. The returned
+  // count is the number of rows this run created.
   const created: SeedSummary = { users: 0, labs: 0, types: 0, copies: 0 };
 
-  const labIds = new Map<string, number>();
-  for (const name of labs) {
-    const existing = await prisma.lab.findUnique({ where: { name } });
-    const lab = existing ?? (await prisma.lab.create({ data: { name } }));
-    created.labs += existing ? 0 : 1;
-    labIds.set(name, lab.id);
-  }
+  created.labs = (
+    await prisma.lab.createMany({ data: labs.map((name) => ({ name })), skipDuplicates: true })
+  ).count;
+  const labIds = new Map(
+    (await prisma.lab.findMany({ where: { name: { in: labs } } })).map(({ id, name }) => [
+      name,
+      id,
+    ]),
+  );
 
-  const people = users.map((user) => ({ ...user, password: seedPassword }));
-  for (const person of people) {
-    let user = await prisma.user.findUnique({ where: { email: person.email } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email: person.email,
-          name: person.name,
-          role: person.role,
-          passwordHash: await hashPassword(person.password),
-          createdAt: now,
-        },
-      });
-      created.users += 1;
-    }
-    if (person.lab) {
-      const key = { labId: labIds.get(person.lab)!, custodianId: user.id };
-      await prisma.labAssignment.upsert({
-        where: { labId_custodianId: key },
-        update: {},
-        create: key,
-      });
-    }
-  }
+  const userRows = await Promise.all(
+    users.map(async ({ email, name, role }) => ({
+      email,
+      name,
+      role,
+      passwordHash: await hashPassword(seedPassword),
+      createdAt: now,
+    })),
+  );
+  created.users = (await prisma.user.createMany({ data: userRows, skipDuplicates: true })).count;
+  const userIds = new Map(
+    (await prisma.user.findMany({ where: { email: { in: users.map(({ email }) => email) } } })).map(
+      ({ id, email }) => [email, id],
+    ),
+  );
+  await prisma.labAssignment.createMany({
+    data: users
+      .filter(({ lab }) => lab)
+      .map(({ email, lab }) => ({ labId: labIds.get(lab!)!, custodianId: userIds.get(email)! })),
+    skipDuplicates: true,
+  });
 
   // The smoke borrower exists only for the deploy check, holds no business data, and is the one
   // row the seed updates: its hash follows SMOKE_PASSWORD so the secret can be rotated (SDS 3.5).
   if (smokeUser) {
     const passwordHash = await hashPassword(smokeUser.password);
-    const existing = await prisma.user.findUnique({ where: { email: smokeUser.email } });
-    if (existing) {
-      await prisma.user.update({ where: { id: existing.id }, data: { passwordHash } });
-    } else {
-      await prisma.user.create({
-        data: {
-          email: smokeUser.email,
-          name: 'Smoke Test Borrower',
-          role: 'BORROWER',
-          passwordHash,
-          createdAt: now,
-        },
-      });
-      created.users += 1;
+    const inserted = await prisma.user.createMany({
+      data: {
+        email: smokeUser.email,
+        name: 'Smoke Test Borrower',
+        role: 'BORROWER',
+        passwordHash,
+        createdAt: now,
+      },
+      skipDuplicates: true,
+    });
+    if (inserted.count === 0) {
+      await prisma.user.update({ where: { email: smokeUser.email }, data: { passwordHash } });
     }
+    created.users += inserted.count;
   }
 
-  for (const type of equipmentTypes) {
-    const labId = labIds.get(type.lab)!;
-    let equipmentType = await prisma.equipmentType.findUnique({
-      where: { labId_name: { labId, name: type.name } },
-    });
-    if (!equipmentType) {
-      equipmentType = await prisma.equipmentType.create({
-        data: {
-          labId,
-          name: type.name,
-          category: type.category,
-          description: type.description,
-          loanPeriodDays: type.loanPeriodDays,
-        },
-      });
-      created.types += 1;
-    }
-    for (const [assetTag, status] of type.copies) {
-      const existing = await prisma.copy.findUnique({ where: { assetTag } });
-      if (!existing) {
-        await prisma.copy.create({ data: { equipmentTypeId: equipmentType.id, assetTag, status } });
-        created.copies += 1;
-      }
-    }
-  }
+  created.types = (
+    await prisma.equipmentType.createMany({
+      data: equipmentTypes.map(({ lab, name, category, description, loanPeriodDays }) => ({
+        labId: labIds.get(lab)!,
+        name,
+        category,
+        description,
+        loanPeriodDays,
+      })),
+      skipDuplicates: true,
+    })
+  ).count;
+  const typeIds = new Map(
+    (await prisma.equipmentType.findMany({ where: { labId: { in: [...labIds.values()] } } })).map(
+      ({ id, labId, name }) => [`${labId}:${name}`, id],
+    ),
+  );
+
+  created.copies = (
+    await prisma.copy.createMany({
+      data: equipmentTypes.flatMap(({ lab, name, copies }) =>
+        copies.map(([assetTag, status]) => ({
+          equipmentTypeId: typeIds.get(`${labIds.get(lab)}:${name}`)!,
+          assetTag,
+          status,
+        })),
+      ),
+      skipDuplicates: true,
+    })
+  ).count;
 
   return created;
 }
