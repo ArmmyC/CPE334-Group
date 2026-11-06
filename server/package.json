@@ -10,7 +10,10 @@
     "start:e2e": "tsx src/e2e-server.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx src/seed-cli.ts"
   },
   "dependencies": {
     "@cpe334-group/shared": "0.1.0",
@@ -29,5 +32,8 @@
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "prisma": {
+    "seed": "tsx src/seed-cli.ts"
   }
 }
