@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '../src/db.js';
-import { seed } from '../src/seed.js';
+import { seed, type SeedSummary } from '../src/seed.js';
 import { resetDatabase } from './helpers/database.js';
 
 const seedEnv = { SEED_USER_PASSWORD: 'seed-password-for-tests' };
@@ -54,6 +54,29 @@ describe('seed', () => {
     expect((await prisma.copy.findUniqueOrThrow({ where: { id: copy.id } })).status).toBe(
       'IN_MAINTENANCE',
     );
+  });
+
+  it('lets two overlapping runs finish and creates each row once', async () => {
+    const env = {
+      ...seedEnv,
+      SMOKE_EMAIL: 'smoke@example.test',
+      SMOKE_PASSWORD: 'smoke-password-for-tests',
+    };
+
+    // allSettled waits for both runs, so a failed run cannot keep writing into the next test.
+    const results = await Promise.allSettled([seed(prisma, env), seed(prisma, env)]);
+    expect(results.map(({ status }) => status)).toEqual(['fulfilled', 'fulfilled']);
+    const [first, second] = results.map(
+      (result) => (result as PromiseFulfilledResult<SeedSummary>).value,
+    );
+
+    expect({
+      users: first.users + second.users,
+      labs: first.labs + second.labs,
+      types: first.types + second.types,
+      copies: first.copies + second.copies,
+    }).toEqual({ users: 6, labs: 2, types: 6, copies: 13 });
+    expect(await countRows()).toEqual({ users: 6, labs: 2, assignments: 2, types: 6, copies: 13 });
   });
 
   it('never stores the plain password', async () => {

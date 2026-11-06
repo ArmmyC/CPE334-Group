@@ -35,7 +35,7 @@ Design: SDS sections 3.2 and 3.5
 ### Seed
 
 - `npm run db:seed` loads the A-04 catalog: Embedded Systems Lab and Network Lab, one custodian assigned to each, three borrowers, six equipment types, and copies in Available and In maintenance states.
-- It only creates missing rows, found by natural keys (email, lab name, type name in a lab, asset tag), and never updates an existing row (NFR-10).
+- It only creates missing rows, found by natural keys (email, lab name, type name in a lab, asset tag), and never updates an existing row, except the smoke borrower's password hash below (NFR-10). Each insert skips rows that already exist in the same statement, so two overlapping runs both finish.
 - Passwords come from `SEED_USER_PASSWORD`, which must be at least 12 characters and not the `replace-` placeholder from `.env.example`. The seed refuses to run otherwise and never prints it.
 - When `SMOKE_EMAIL` and `SMOKE_PASSWORD` are both set, the seed also creates the smoke borrower (SDS section 3.5). Its password hash is the one value the seed updates on every run, so the secret can be rotated. Setting only one of the two, or a smoke email that is a demo account, stops the seed before any write.
 - The On loan copy and its sample loan are not in this seed. SDS section 3.5 creates the sample loan through the checkout service, so F-04 adds it.
@@ -65,6 +65,7 @@ Supporting checks that have no AC of their own:
 | Check | Level | Expected result |
 | --- | --- | --- |
 | Seed is repeatable | Database integration | Running the seed twice gives the same row counts. A copy status changed between the runs is not reset. |
+| Seed runs overlap | Database integration | Two seed runs started together both finish without an error. Together they create each row once, and the row counts match a single run. |
 | Seed refuses bad configuration | Database integration | The seed stops with a clear message, and writes nothing, when `SEED_USER_PASSWORD` is unset, shorter than 12 characters, or the example placeholder, when only one smoke variable is set, or when the smoke email is a demo account. |
 | Smoke password rotation | Database integration | A second run with a new `SMOKE_PASSWORD` changes only the smoke account's hash. Row counts and demo account hashes stay the same. |
 | Password hash format | Unit | `hashPassword` returns `scrypt$16384$8$1$salt$hash` with a 16-byte salt and a 64-byte key, and hashing one password twice gives different strings. |
