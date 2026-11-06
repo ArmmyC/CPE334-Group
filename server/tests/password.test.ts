@@ -1,6 +1,6 @@
 import { scryptSync } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { hashPassword } from '../src/auth/password.js';
+import { hashPassword, verifyPassword } from '../src/auth/password.js';
 
 describe('Supporting check: password hash format (SDS 7.1)', () => {
   it('stores scrypt parameters, a 16-byte salt, and a 64-byte key', async () => {
@@ -24,5 +24,26 @@ describe('Supporting check: password hash format (SDS 7.1)', () => {
     const second = await hashPassword('correct horse battery');
 
     expect(first).not.toBe(second);
+  });
+});
+
+describe('TEST-F01-05 password verification (AC-F01-05, NFR-01)', () => {
+  it('accepts the right password and refuses a wrong one', async () => {
+    const stored = await hashPassword('correct horse battery');
+
+    expect(await verifyPassword('correct horse battery', stored)).toBe(true);
+    expect(await verifyPassword('correct horse batterz', stored)).toBe(false);
+    expect(await verifyPassword('', stored)).toBe(false);
+  });
+
+  it.each([
+    ['an empty string', ''],
+    ['another scheme', 'bcrypt$10$abc'],
+    ['missing parts', 'scrypt$16384$8$1$c2FsdA=='],
+    ['non-numeric parameters', 'scrypt$N$8$1$c2FsdA==$aGFzaA=='],
+    ['an empty key', 'scrypt$16384$8$1$c2FsdA==$'],
+    ['the seed fixture placeholder', 'scrypt$16384$8$1$fixture$fixture'],
+  ])('returns false for %s without throwing', async (_label, stored) => {
+    await expect(verifyPassword('correct horse battery', stored)).resolves.toBe(false);
   });
 });
