@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import type { Role } from '@cpe334-group/shared';
 import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
 import { LoginPage } from './LoginPage';
+import { MyRequestsPage } from './MyRequestsPage';
 
 export function App() {
   return (
@@ -57,6 +58,11 @@ function Header() {
           </Link>
           {state.status === 'signed-in' && (
             <div className="d-flex align-items-center gap-2 text-white">
+              {state.user.role === 'BORROWER' && (
+                <Link className="text-white me-2" to="/my">
+                  My requests
+                </Link>
+              )}
               <span>{state.user.name}</span>
               <span className="badge text-bg-light">{ROLE_LABEL[state.user.role]}</span>
               <button
@@ -110,6 +116,14 @@ function Content() {
         element={
           <RequireRole role="BORROWER">
             <PlaceholderPage title="Equipment catalog" />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/my"
+        element={
+          <RequireRole role="BORROWER">
+            <MyRequestsPage />
           </RequireRole>
         }
       />
