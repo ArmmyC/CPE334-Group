@@ -42,6 +42,11 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, nex
     response.status(413).json(apiError('PAYLOAD_TOO_LARGE', 'The request body is too large.'));
     return;
   }
+  // A transaction that waited past maxWait or timeout (SDS 2.5). Nothing was changed.
+  if (error?.code === 'P2028') {
+    response.status(503).json(apiError('SERVICE_BUSY', 'The service is busy. Try again.'));
+    return;
+  }
   console.error(error);
   response.status(500).json(apiError('INTERNAL_ERROR', 'Something went wrong.'));
 };
