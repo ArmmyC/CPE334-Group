@@ -58,7 +58,10 @@ describe('TEST-F03-01 submit a borrow request (AC-F03-01, FR-06)', () => {
       equipmentTypeId: type.id,
       purpose: 'Lab practical',
     });
-    const withoutPurpose = await submit(app, cookie, { equipmentTypeId: type.id });
+    // A second type, because BR-04 allows one Pending request per type.
+    const secondType = await createEquipmentType();
+    await createCopy(secondType.id);
+    const withoutPurpose = await submit(app, cookie, { equipmentTypeId: secondType.id });
 
     expect(withPurpose.status).toBe(201);
     expect(withPurpose.body).toMatchObject({ status: 'PENDING', purpose: 'Lab practical' });
