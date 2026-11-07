@@ -5,13 +5,14 @@ Issue: #18
 Owner: @ArmmyC, reviewer @Bank848
 Requirements: FR-14, BR-15, NFR-03
 Depends on: F-01 (merged), F-04 checkout (@Bank848, which writes the loans this list shows). The contract can be written before F-04 merges, but the tests that use the checkout path wait for it.
-Sources: [SRS](../../srs.md) section 3 (FR-14), [System-Level SDS](../../system-sds.md) sections 4, 5.2, 6.2, and 7, [Traceability](../../traceability.md) section 4
+Sources: [SRS](../../srs.md) section 3 (FR-14), [System-Level SDS](../../system-sds.md) sections 4, 5.1, 5.2, 6.2, and 7, [Traceability](../../traceability.md) section 4
 
 ## Version history
 
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-07 | @ArmmyC | First contract, written before the tests (#18). |
+| 0.2 | 2026-11-07 | @ArmmyC | Review fixes on #20: unknown query parameters return 400, and the SDS 5.1 source is cited. |
 
 ## 1. Feature-Level SDS
 
@@ -49,7 +50,7 @@ No migration. The feature reads `loan`, `copy`, `equipment_type`, `lab`, `lab_as
 
 | Method and path | Access | Request | Success | Errors |
 | --- | --- | --- | --- | --- |
-| `GET /api/custodian/loans` | Custodian | Optional query `status`. Only `ACTIVE` is allowed in Sprint 1, and it is the default. | 200 with the active loans in the custodian's labs, sorted by `dueDate` ascending, then `checkedOutAt` ascending, then `id` | 400 `VALIDATION_ERROR` with `fields.status` for another value, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower |
+| `GET /api/custodian/loans` | Custodian | Optional query `status`. Only `ACTIVE` is allowed in Sprint 1, and it is the default. | 200 with the active loans in the custodian's labs, sorted by `dueDate` ascending, then `checkedOutAt` ascending, then `id` | 400 `VALIDATION_ERROR` with `fields.status` for another value, 400 `VALIDATION_ERROR` for an unknown query parameter, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower |
 
 Response shape, defined in `shared/src/loans.ts`:
 
@@ -92,6 +93,7 @@ Supporting checks that have no AC of their own:
 | Two assigned labs | API | A custodian assigned to two labs sees the active loans of both, in one list. |
 | No assigned lab | API | A custodian with no `lab_assignment` row gets 200 with an empty list. |
 | Status query | API | Omitting `status` and `status=ACTIVE` both return the same list. Any other value returns 400 `VALIDATION_ERROR` with `fields.status`. |
+| Unknown query parameter | API | A request with `?overdue=true`, a Sprint 2 filter, or any other unknown parameter returns 400 `VALIDATION_ERROR`, as SDS 5.1 requires. |
 | Sort order | API | Loans with the same due date are ordered by checkout time, then by id. |
 | Loading, empty, and error states | UI | The page shows "Loading...", "No active loans in your labs.", and "Could not load active loans." with a Retry button, as TEST-SR02-03 requires. |
 | Header link | UI | A custodian sees "Active loans" in the header, and a borrower does not. |

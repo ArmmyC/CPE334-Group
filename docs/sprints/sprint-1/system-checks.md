@@ -201,14 +201,14 @@ Design: SDS sections 9.1 and 9.2
 
 | Test | AC | Level | Precondition or input | Action | Expected result |
 | --- | --- | --- | --- | --- | --- |
-| TEST-SR07-01 | AC-SR07-01 | Manual review for the release | The release commit on `main`, and a local build from it | 1. Run `git ls-files`, and confirm that no `.env` or `.env.test` file is listed. Read `.env.example` and `.env.test.example`, and confirm each value is a placeholder or a documented local value. 2. Run `npm run build`, and search `client/dist` for the values of `SEED_USER_PASSWORD`, `SMOKE_PASSWORD`, and the password in `DATABASE_URL`. 3. Run `gh api repos/ArmmyC/CPE334-Group --jq .security_and_analysis`, and confirm secret scanning and push protection are enabled. Run `gh api "repos/ArmmyC/CPE334-Group/secret-scanning/alerts?state=open" --jq length`, and confirm it prints 0. | All checks pass, and each result is recorded against the release commit. |
+| TEST-SR07-01 | AC-SR07-01 | Manual review for the release | The release commit on `main`, and a local build from it | 1. Run `git ls-files`, and confirm that no `.env` or `.env.test` file is listed. Read `.env.example` and `.env.test.example`, and confirm each value is a placeholder or a documented local value. 2. Run `npm run build`, and search `client/dist` for the values of `SEED_USER_PASSWORD`, `SMOKE_PASSWORD`, and the password in `DATABASE_URL`. 3. Run both commands below as @ArmmyC, the repository owner, because both need admin rights. A 404 from either command means the check did not run, so it is recorded as not checked, not as a pass. Run `gh api repos/ArmmyC/CPE334-Group --jq .security_and_analysis`, and confirm secret scanning and push protection are enabled. Run `gh api "repos/ArmmyC/CPE334-Group/secret-scanning/alerts?state=open" --jq length`, and confirm it prints 0. | All checks pass, and each result is recorded against the release commit. |
 
 Supporting checks that have no AC of their own:
 
 | Check | Level | Expected result |
 | --- | --- | --- |
 | Client environment reads | Review | `grep -rn "import.meta.env" client/src` lists no secret variable. |
-| Ignore rules | Review | `.gitignore` lists `.env` and `.env.test`. |
+| Ignore rules | Review | `git check-ignore .env .env.test` prints both file names, and `git check-ignore .env.example` prints nothing. |
 
 ### Definition of Done
 
