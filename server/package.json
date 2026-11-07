@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "start:e2e": "tsx src/e2e-server.ts",
+    "e2e:seed": "tsx src/assert-test-db.ts && prisma migrate deploy && tsx src/e2e-seed.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "prisma:generate": "prisma generate",

@@ -11,3 +11,22 @@ export function assertTestDatabaseUrl(databaseUrl: string | undefined): void {
     throw new Error('Tests need .env.test with a DATABASE_URL whose database name ends in _test.');
   }
 }
+
+type RawClient = {
+  $queryRaw: <T>(query: TemplateStringsArray, ...values: unknown[]) => Promise<T>;
+  $executeRawUnsafe: (query: string) => Promise<number>;
+};
+
+// Empties every application table and restarts its identity, keeping the migration history.
+// Used by the server tests and the E2E seed, both on the test database only.
+export async function resetDatabase(prisma: RawClient): Promise<void> {
+  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename FROM pg_tables
+    WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'
+  `;
+  if (tables.length === 0) {
+    return;
+  }
+  const names = tables.map(({ tablename }) => `"public"."${tablename}"`).join(', ');
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${names} RESTART IDENTITY CASCADE`);
+}
