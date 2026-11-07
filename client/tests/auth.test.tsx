@@ -224,6 +224,20 @@ describe('TEST-F01-03 logout in the UI (AC-F01-03, FR-02)', () => {
     expect(screen.queryByText('Arisa Kittipong')).toBeNull();
   });
 
+  it('keeps the user signed in and shows a message when logout fails', async () => {
+    stubApi({
+      'GET /api/auth/me': () => json(borrower),
+      'POST /api/auth/logout': () =>
+        new Response('{}', { status: 500, headers: { 'Content-Type': 'application/json' } }),
+    });
+    renderApp('/catalog');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Logout' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not log out. Try again.');
+    expect(screen.getByText('Arisa Kittipong')).toBeInTheDocument();
+  });
+
   it('also returns to the login page when the session had already expired', async () => {
     stubApi({
       'GET /api/auth/me': () => json(borrower),

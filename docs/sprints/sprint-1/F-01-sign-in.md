@@ -66,7 +66,7 @@ sequenceDiagram
 | Refused | A missing, unknown, or expired session gets 401 `UNAUTHENTICATED`. An expired row is deleted when found. |
 | Cookie | `sid`, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age=86400`, and `Secure` when `NODE_ENV=production` |
 | Logout | Deletes the session row and clears the cookie |
-| Cleanup | A successful login deletes that user's expired sessions |
+| Cleanup | A successful login deletes that user's expired sessions, and the session named by the request's `sid` cookie if there is one |
 
 ### 1.5 Data
 
@@ -110,7 +110,7 @@ Error codes added by this feature, all in the shared shape:
 | Login page `/login` | Email and password fields with labels. Submitting validates with `loginRequestSchema` first and shows each message under its field. The Log in button is disabled while the request is in flight. A 401 shows "Email or password is incorrect." above the form. The page also shows the system status line from the scaffold. |
 | After login | A borrower goes to `/catalog`, and a custodian to `/custodian/requests` (SDS 4.1). Until F-02 and F-04 build them, these routes show the page title and "This page is not built yet." |
 | Header | When signed in, shows the user's name, the role as "Borrower" or "Custodian", and a Logout button on every page |
-| Logout | Calls the logout endpoint, then shows the login page. A 401 from logout is treated the same, since the session is already gone. |
+| Logout | Calls the logout endpoint, then shows the login page. A 401 from logout is treated the same, since the session is already gone. Any other failure keeps the user signed in and shows "Could not log out. Try again." |
 | Route guards | Signed out, every route except `/login` goes to `/login`. A route for the other role goes to the user's home page. `/` goes to the user's home page. These guards are for usability only, and the API checks every permission again. |
 
 ## 4. Acceptance criteria

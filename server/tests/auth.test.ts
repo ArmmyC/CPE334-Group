@@ -91,6 +91,21 @@ describe('TEST-F01-03 logout (AC-F01-03, FR-02, NFR-04)', () => {
     expect(reused.body.error.code).toBe('UNAUTHENTICATED');
   });
 
+  it('ends the session named by the cookie that a new login arrives with', async () => {
+    const app = createTestApp();
+    const borrower = await createAccount();
+    const earlier = sessionCookie(await logIn(app, borrower.email))!;
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .set('Cookie', earlier)
+      .send({ email: borrower.email, password: testPassword });
+
+    expect(response.status).toBe(200);
+    expect((await me(app, earlier)).status).toBe(401);
+    expect(await prisma.session.count()).toBe(1);
+  });
+
   it('refuses logout without a session', async () => {
     const response = await request(createTestApp()).post('/api/auth/logout');
 

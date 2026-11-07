@@ -1,5 +1,6 @@
 import type { CookieOptions, RequestHandler } from 'express';
 import { loginRequestSchema } from '@cpe334-group/shared';
+import { readCookie } from '../http/access.js';
 import { validateBody } from '../http/validate.js';
 import { SESSION_ABSOLUTE_MS, SESSION_COOKIE, type SessionService } from './sessions.js';
 
@@ -20,7 +21,8 @@ export function authHandlers({
 
   const login: RequestHandler = async (request, response) => {
     const { email, password } = validateBody(loginRequestSchema, request.body);
-    const { token, user } = await sessions.logIn(email, password);
+    const previousToken = readCookie(request.headers.cookie, SESSION_COOKIE);
+    const { token, user } = await sessions.logIn(email, password, previousToken);
     response.cookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_ABSOLUTE_MS });
     response.json(user);
   };

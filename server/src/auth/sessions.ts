@@ -29,7 +29,13 @@ export function createSessionService({ prisma, clock }: { prisma: PrismaClient; 
   return {
     // Verifies the password and starts a session. A wrong email and a wrong password give
     // the same error, and an unknown email is still checked against a dummy hash (FR-01).
-    async logIn(email: string, password: string): Promise<{ token: string; user: CurrentUser }> {
+    // The session named by the request's own cookie, if any, ends too, so a shared PC does
+    // not keep the previous user's session alive.
+    async logIn(
+      email: string,
+      password: string,
+      previousToken?: string,
+    ): Promise<{ token: string; user: CurrentUser }> {
       const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
       if (!user) {
         await verifyPassword(password, await getDummyHash());
@@ -49,6 +55,9 @@ export function createSessionService({ prisma, clock }: { prisma: PrismaClient; 
           ],
         },
       });
+      if (previousToken) {
+        await prisma.session.deleteMany({ where: { tokenHash: hashToken(previousToken) } });
+      }
       const token = randomBytes(32).toString('base64url');
       await prisma.session.create({
         data: {

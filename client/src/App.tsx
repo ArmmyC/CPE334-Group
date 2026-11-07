@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import type { Role } from '@cpe334-group/shared';
 import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
@@ -37,6 +37,17 @@ function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
 
 function Header() {
   const { state, signOut } = useAuth();
+  const [logoutFailed, setLogoutFailed] = useState(false);
+
+  async function handleLogout() {
+    setLogoutFailed(false);
+    try {
+      await signOut();
+    } catch {
+      setLogoutFailed(true);
+    }
+  }
+
   return (
     <header>
       <nav className="navbar navbar-dark bg-dark">
@@ -51,7 +62,7 @@ function Header() {
               <button
                 type="button"
                 className="btn btn-outline-light btn-sm ms-2"
-                onClick={() => void signOut()}
+                onClick={() => void handleLogout()}
               >
                 Logout
               </button>
@@ -59,6 +70,13 @@ function Header() {
           )}
         </div>
       </nav>
+      {logoutFailed && (
+        <div className="container">
+          <div className="alert alert-danger mt-2 mb-0 py-2" role="alert">
+            Could not log out. Try again.
+          </div>
+        </div>
+      )}
     </header>
   );
 }

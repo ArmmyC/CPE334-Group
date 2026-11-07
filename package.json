@@ -33,7 +33,7 @@
     "db:setup": "npm run db:up && npm run db:deploy && npm run db:seed",
     "db:test:up": "docker compose --env-file .env.test up -d --wait db-test",
     "db:down": "docker compose down",
-    "e2e:seed": "dotenv -e .env.test -- npm run e2e:seed --workspace server",
+    "e2e:seed": "dotenv -o -e .env.test -- npm run e2e:seed --workspace server",
     "e2e:server": "dotenv -e .env.test -- npm run start:e2e --workspace server",
     "e2e:client": "npm run dev --workspace client -- --host 127.0.0.1"
   },

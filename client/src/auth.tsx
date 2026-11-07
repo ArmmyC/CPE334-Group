@@ -46,12 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback((user: CurrentUser) => setState({ status: 'signed-in', user }), []);
 
+  // Signs out only after the server ends the session (or reports it already gone, 401). On
+  // any other failure the user stays signed in, so a shared PC never shows "signed out" while
+  // the session is still alive.
   const signOut = useCallback(async () => {
-    try {
-      await logout();
-    } finally {
-      setState({ status: 'signed-out' });
-    }
+    await logout();
+    setState({ status: 'signed-out' });
   }, []);
 
   const retry = useCallback(() => {
