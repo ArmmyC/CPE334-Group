@@ -79,7 +79,7 @@ Each Sprint 1 feature gets its own contract in `docs/sprints/sprint-1/`, committ
 | F-02 | `docs/sprints/sprint-1/F-02-catalog.md` | To be created |
 | F-03 | `docs/sprints/sprint-1/F-03-borrow-requests.md` | To be created |
 | F-04 | `docs/sprints/sprint-1/F-04-checkout.md` | To be created |
-| F-05 | `docs/sprints/sprint-1/F-05-active-loans.md` | To be created |
+| F-05 | `docs/sprints/sprint-1/F-05-active-loans.md` | #18 |
 | F-06 | `docs/sprints/sprint-1/F-06-copy-status.md` | To be created |
 | F-07 | `docs/sprints/sprint-1/F-07-history-recording.md` | To be created |
 | SR-01, SR-02, SR-03, SR-04, SR-07 | `docs/sprints/sprint-1/system-checks.md` | #12 adds the file with the SR-03 section, and #14 adds SR-01 and SR-02. The other SR sections are added by their Issues. |
