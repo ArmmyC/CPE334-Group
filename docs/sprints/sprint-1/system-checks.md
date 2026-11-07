@@ -11,6 +11,7 @@ This file is the contract for the Sprint 1 system responsibilities (SR-xx). It h
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-06 | @ArmmyC | SR-03 section, written before its tests (#12). Adds AC-SR03-04 for the BR-01 and BR-04 database guards. |
 | 0.2 | 2026-11-07 | @ArmmyC | SR-01 and SR-02 sections, written with the F-01 contract before their tests (#14). |
+| 0.3 | 2026-11-07 | @ArmmyC | SR-04 and SR-07 sections, written before their checks are run (#19). |
 
 ## SR-01 Authorization
 
@@ -139,3 +140,77 @@ Supporting checks that have no AC of their own:
 - TEST-SR03-01, TEST-SR03-02, TEST-SR03-04, and the supporting checks pass, and they failed before the schema existed.
 - The README lists the setup commands, and TEST-SR03-03 is recorded for the Sprint 1 release.
 - Lint, format, build, and all existing tests pass.
+
+## SR-04 Durable storage
+
+Requirements: NFR-10
+Issue: #19
+Design: SDS sections 4 and 7.2, and the Lab 5 durability rule in section 10
+
+### Design
+
+- Every record is in PostgreSQL: users, sessions, requests, loans, copy statuses, and history. The API keeps nothing in memory between requests, so a restart loses no state.
+- The local database keeps its files in the named volume `cpe334-group-db-data` in `docker-compose.yml`. `docker compose down` without `-v` keeps the volume, and so keeps the data.
+- The seed only creates missing rows and never resets a changed status (SR-03), so a redeploy does not undo user changes.
+- Google Cloud durability (Cloud SQL, redeploy) is checked in Sprint 2 (Lab 5) and repeated in Sprint 3, as the traceability sheet records.
+
+### Acceptance criteria
+
+| AC | Requirements | Observable outcome |
+| --- | --- | --- |
+| AC-SR04-01 | NFR-10 | A request, a loan, and a copy status change made before an API and database restart are still there after it. |
+
+### Test specifications
+
+| Test | AC | Level | Precondition or input | Action | Expected result |
+| --- | --- | --- | --- | --- | --- |
+| TEST-SR04-01 | AC-SR04-01 | Manual, recorded for the release | A local stack on the release commit, with F-03, F-04, and F-06 merged, a borrower session, and a custodian session | 1. As the borrower, submit a request. As the custodian, set one copy of another type to In maintenance, and check out a copy for a Pending request. Note the record ids and the borrower's cookie. 2. Stop the API, run `docker compose restart db`, and start the API again. 3. Read the request and the loan, read the copy status, and call `GET /api/auth/me` with the same cookie. | The request, the loan, and the copy status are unchanged. The cookie still returns the borrower, so the session survived the restart. |
+
+Supporting checks that have no AC of their own:
+
+| Check | Level | Expected result |
+| --- | --- | --- |
+| Named volume | Review | `docker-compose.yml` mounts `cpe334-group-db-data` on the `db` service, and nothing else holds the data. Checked for the release. |
+| Sessions survive restart | Manual | Part of TEST-SR04-01 step 3. |
+
+### Definition of Done
+
+- TEST-SR04-01 is recorded against the release commit, with the record ids and the result.
+- F-03, F-04, and F-06 are merged before the check runs. Before they are, the same steps run for the request and the session only, and that partial result is recorded as partial.
+
+## SR-07 Secret handling
+
+Requirements: NFR-13
+Issue: #19
+Design: SDS sections 9.1 and 9.2
+
+### Design
+
+- `.env` and `.env.test` are ignored by Git. Only `.env.example` and `.env.test.example` are committed, and they hold placeholders or local development values that the README documents.
+- The client bundle reads no secrets. Vite exposes only variables with the `VITE_` prefix, and the project defines none that are secret.
+- GitHub secret scanning and push protection are on for the public repository.
+- In Sprint 2 and later, runtime secrets live in Google Secret Manager, not in Git or the image (Lab 5).
+
+### Acceptance criteria
+
+| AC | Requirements | Observable outcome |
+| --- | --- | --- |
+| AC-SR07-01 | NFR-13 | `.env.example` has placeholders only, the built client files contain no secret, and GitHub secret scanning is on with no open alerts. |
+
+### Test specifications
+
+| Test | AC | Level | Precondition or input | Action | Expected result |
+| --- | --- | --- | --- | --- | --- |
+| TEST-SR07-01 | AC-SR07-01 | Manual review for the release | The release commit on `main`, and a local build from it | 1. Run `git ls-files`, and confirm that no `.env` or `.env.test` file is listed. Read `.env.example` and `.env.test.example`, and confirm each value is a placeholder or a documented local value. 2. Run `npm run build`, and search `client/dist` for the values of `SEED_USER_PASSWORD`, `SMOKE_PASSWORD`, and the password in `DATABASE_URL`. 3. Run both commands below as @ArmmyC, the repository owner, because both need admin rights. A 404 from either command means the check did not run, so it is recorded as not checked, not as a pass. Run `gh api repos/ArmmyC/CPE334-Group --jq .security_and_analysis`, and confirm secret scanning and push protection are enabled. Run `gh api "repos/ArmmyC/CPE334-Group/secret-scanning/alerts?state=open" --jq length`, and confirm it prints 0. | All checks pass, and each result is recorded against the release commit. |
+
+Supporting checks that have no AC of their own:
+
+| Check | Level | Expected result |
+| --- | --- | --- |
+| Client environment reads | Review | `grep -rn "import.meta.env" client/src` lists no secret variable. |
+| Ignore rules | Review | `git check-ignore .env .env.test` prints both file names, and `git check-ignore .env.example` prints nothing. |
+
+### Definition of Done
+
+- TEST-SR07-01 is recorded against the release commit, with each command and its output.
+- Any finding is fixed before the release PR is merged. A secret that was pushed is changed at once, as SDS 9.2 requires.
