@@ -1,0 +1,151 @@
+name: CI
+
+# SR-05 / NFR-11: every pull request runs lint, build, and tests, and a failing check blocks
+# the merge. The jobs below are the required status checks of the branch protection rule.
+on:
+  pull_request:
+    branches: [main, 'sprint-*']
+  push:
+    branches: [main, 'sprint-*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Throwaway values for the database that exists only inside this run. Not secrets.
+  CI_DB_USER: ci
+  CI_DB_PASSWORD: ci-test-password
+  CI_DB_NAME: cpe334_group_test
+
+jobs:
+  quality:
+    name: Lint, build, and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: cpe334_group_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U ci -d cpe334_group_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Write .env.test
+        run: |
+          {
+            echo "DATABASE_URL=postgresql://$CI_DB_USER:$CI_DB_PASSWORD@127.0.0.1:5432/$CI_DB_NAME?schema=public"
+            echo "PORT=4100"
+            echo "APP_ORIGIN=http://127.0.0.1:5190"
+          } > .env.test
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run build
+      - run: npm test
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: cpe334_group_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U ci -d cpe334_group_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Write .env.test
+        run: |
+          {
+            echo "DATABASE_URL=postgresql://$CI_DB_USER:$CI_DB_PASSWORD@127.0.0.1:5432/$CI_DB_NAME?schema=public"
+            echo "PORT=4100"
+            echo "APP_ORIGIN=http://127.0.0.1:5190"
+          } > .env.test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: cpe334_group
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U ci -d cpe334_group"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci-test-password@127.0.0.1:5432/cpe334_group?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build --tag cpe334-group:ci .
+      # The same two commands the Lab 5 migration job runs (SDS 10).
+      - name: Migrate and seed
+        run: |
+          docker run --rm --network host -e DATABASE_URL \
+            cpe334-group:ci node node_modules/prisma/build/index.js migrate deploy --schema server/prisma/schema.prisma
+          docker run --rm --network host -e DATABASE_URL -e SEED_USER_PASSWORD=ci-seed-password-1 \
+            cpe334-group:ci node server/dist/seed-cli.js
+      - name: Start the container and check it
+        run: |
+          docker run -d --name app --network host -e DATABASE_URL \
+            -e APP_ORIGIN=http://127.0.0.1:8080 -e PORT=8080 cpe334-group:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/api/ready >/dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/api/ready
+          curl -fsS http://127.0.0.1:8080/api/health
+          curl -fsS http://127.0.0.1:8080/ | grep -q '<div id="root"'
+          curl -fsS http://127.0.0.1:8080/catalog/4 | grep -q '<div id="root"'
+          test "$(docker exec app id -u)" != "0"
+      - name: Container log
+        if: always()
+        run: docker logs app || true
