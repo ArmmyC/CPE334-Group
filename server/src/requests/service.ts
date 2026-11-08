@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import type { BorrowRequest, CreateRequest } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
+import { recordStatusChange } from '../history/service.js';
 
 // SDS 2.5: the transaction waits up to 5 seconds for a pool connection and runs up to 10.
 const TRANSACTION_OPTIONS = { maxWait: 5000, timeout: 10000 };
@@ -51,8 +52,8 @@ function toBorrowRequest(row: RequestRow): BorrowRequest {
   };
 }
 
-// The borrower's borrow requests (F-03). Each change runs in one transaction.
-// TODO(F-07): call the history recorder inside each transaction once F-07 is merged.
+// The borrower's borrow requests (F-03). Each change runs in one transaction and records its
+// status change through the F-07 history recorder inside that transaction.
 export function createRequestService({ prisma, clock }: { prisma: PrismaClient; clock: Clock }) {
   return {
     async submit(borrowerId: number, input: CreateRequest): Promise<BorrowRequest> {
@@ -90,6 +91,13 @@ export function createRequestService({ prisma, clock }: { prisma: PrismaClient; 
             },
             include: requestInclude,
           });
+          await recordStatusChange(tx, clock, {
+            entityType: 'REQUEST',
+            entityId: created.id,
+            actorId: borrowerId,
+            oldStatus: null,
+            newStatus: 'PENDING',
+          });
           return toBorrowRequest(created);
         }, TRANSACTION_OPTIONS);
       } catch (error) {
@@ -117,6 +125,13 @@ export function createRequestService({ prisma, clock }: { prisma: PrismaClient; 
         if (changed.count === 0) {
           throw invalidStatus();
         }
+        await recordStatusChange(tx, clock, {
+          entityType: 'REQUEST',
+          entityId: requestId,
+          actorId: borrowerId,
+          oldStatus: 'PENDING',
+          newStatus: 'CANCELLED',
+        });
         const row = await tx.borrowRequest.findUniqueOrThrow({
           where: { id: requestId },
           include: requestInclude,
