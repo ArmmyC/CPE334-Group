@@ -8,7 +8,8 @@ import type { CheckoutService } from './service.js';
 // custodian can see, so it gets the same 404 as a missing one (SDS 5.1).
 function parseId(value: string): number {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  // 2147483647 is the largest PostgreSQL integer, so a larger id cannot exist.
+  if (!Number.isInteger(id) || id <= 0 || id > 2_147_483_647) {
     throw new HttpError(404, 'NOT_FOUND', 'This request could not be found.');
   }
   return id;

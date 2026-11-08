@@ -25,7 +25,11 @@ export type AvailableCopy = z.infer<typeof availableCopySchema>;
 export const availableCopyListSchema = z.object({ items: z.array(availableCopySchema) });
 
 export const checkoutBodySchema = z.object({
-  copyId: z.number({ error: 'Choose a copy.' }).int('Choose a copy.').positive('Choose a copy.'),
+  copyId: z
+    .number({ error: 'Choose a copy.' })
+    .int('Choose a copy.')
+    .positive('Choose a copy.')
+    .max(2_147_483_647, 'Choose a copy.'),
 });
 
 export type CheckoutBody = z.infer<typeof checkoutBodySchema>;
