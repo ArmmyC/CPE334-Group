@@ -81,7 +81,7 @@ jobs:
             --update-labels "git-sha=${GITHUB_SHA}" \
             --command sh \
             --args=-c,"node node_modules/prisma/build/index.js migrate deploy --schema server/prisma/schema.prisma && node server/dist/seed-cli.js" \
-            --max-retries 0 --task-timeout 600s
+            --max-retries 0 --task-timeout 600s --quiet
           gcloud run jobs execute "$MIGRATE_JOB" \
             --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --wait
         env:
@@ -99,7 +99,7 @@ jobs:
             --set-env-vars "APP_ORIGIN=${APP_ORIGIN}" \
             --update-labels "git-sha=${GITHUB_SHA}" \
             --port 8080 --min-instances 0 --max-instances 3 \
-            --cpu 1 --memory 512Mi
+            --cpu 1 --memory 512Mi --quiet
         env:
           GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           GCP_REGION: ${{ vars.GCP_REGION }}
