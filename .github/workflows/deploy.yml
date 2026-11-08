@@ -1,0 +1,123 @@
+name: Deploy
+
+# Lab 5, SDS section 10. A merge into main starts this workflow. It waits for a manual approval
+# on the `demo` environment, then builds the image, pushes it by commit SHA, runs the migration
+# and seed as a Cloud Run job, deploys the service by image digest, and runs a smoke test.
+# GitHub signs in to Google Cloud through Workload Identity Federation, so no key file exists.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+# Two deploys must never run at once, and a running one is never cancelled half way.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  SERVICE: cpe334-app
+  MIGRATE_JOB: cpe334-migrate
+  REPOSITORY: cpe334
+  INSTANCE: cpe334-db
+  SMOKE_EMAIL: smoke.borrower@example.com
+
+jobs:
+  deploy:
+    name: Build, migrate, deploy, smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Variables GCP_PROJECT_ID, GCP_REGION, GCP_WIF_PROVIDER, and GCP_DEPLOY_SA live on this
+    # environment. Its required reviewers are the manual approval.
+    environment: demo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Work out names
+        run: |
+          project_number="$(echo "$GCP_WIF_PROVIDER" | cut -d/ -f2)"
+          {
+            echo "IMAGE=${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPOSITORY}/app"
+            echo "CONNECTION=${GCP_PROJECT_ID}:${GCP_REGION}:${INSTANCE}"
+            # A Cloud Run URL is fixed by service name, project number, and region, so the
+            # API origin allow list can be set on the very first deploy.
+            echo "APP_ORIGIN=https://${SERVICE}-${project_number}.${GCP_REGION}.run.app"
+          } >> "$GITHUB_ENV"
+        env:
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+
+      - name: Build and push the image (tag is the full commit SHA)
+        run: |
+          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE:$GITHUB_SHA" .
+          docker push "$IMAGE:$GITHUB_SHA"
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$GITHUB_SHA")"
+          echo "IMAGE_DIGEST=$digest" >> "$GITHUB_ENV"
+          echo "Pushed $digest"
+        env:
+          GCP_REGION: ${{ vars.GCP_REGION }}
+
+      - name: Migrate and seed (Cloud Run job, runs before the new revision)
+        run: |
+          gcloud run jobs deploy "$MIGRATE_JOB" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
+            --image "$IMAGE_DIGEST" \
+            --service-account "run-migrate@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --set-cloudsql-instances "$CONNECTION" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,SEED_USER_PASSWORD=SEED_USER_PASSWORD:latest,SMOKE_PASSWORD=SMOKE_PASSWORD:latest" \
+            --set-env-vars "SMOKE_EMAIL=${SMOKE_EMAIL}" \
+            --update-labels "git-sha=${GITHUB_SHA}" \
+            --command sh \
+            --args=-c,"node node_modules/prisma/build/index.js migrate deploy --schema server/prisma/schema.prisma && node server/dist/seed-cli.js" \
+            --max-retries 0 --task-timeout 600s
+          gcloud run jobs execute "$MIGRATE_JOB" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --wait
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+
+      - name: Deploy the service by image digest
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
+            --image "$IMAGE_DIGEST" \
+            --service-account "run-runtime@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --set-cloudsql-instances "$CONNECTION" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest" \
+            --set-env-vars "APP_ORIGIN=${APP_ORIGIN}" \
+            --update-labels "git-sha=${GITHUB_SHA}" \
+            --port 8080 --min-instances 0 --max-instances 3 \
+            --cpu 1 --memory 512Mi
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+
+      - name: Smoke test the public URL
+        run: |
+          SMOKE_PASSWORD="$(gcloud secrets versions access latest --secret SMOKE_PASSWORD --project "$GCP_PROJECT_ID")"
+          echo "::add-mask::$SMOKE_PASSWORD"
+          export SMOKE_PASSWORD
+          BASE_URL="$APP_ORIGIN" infra/smoke.sh
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Release identity
+        run: |
+          {
+            echo "### Deployed"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Image: \`${IMAGE_DIGEST}\`"
+            echo "- URL: ${APP_ORIGIN}"
+          } >> "$GITHUB_STEP_SUMMARY"
