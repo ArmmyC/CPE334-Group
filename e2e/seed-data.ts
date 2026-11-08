@@ -3,3 +3,5 @@
 export const e2ePassword = 'e2e-password-for-tests';
 
 export const seededBorrower = { email: 'borrower1@example.com', name: 'Arisa Kittipong' };
+
+export const seededCustodian = { email: 'custodian.embedded@example.com', name: 'Napat Srisuk' };
