@@ -46,6 +46,7 @@ test('TEST-E2E-01 a custodian checks out a request and the borrower sees the loa
 
   const borrowerPage = await (await browser.newContext()).newPage();
   await logIn(borrowerPage, seededBorrower.email);
+  await expect(borrowerPage).toHaveURL(/\/catalog$/);
   await borrowerPage.goto('/my');
   const loanRow = borrowerPage.getByRole('row', { name: /EMB-ARD-001/ });
   await expect(loanRow).toContainText('Arduino Uno R3');
