@@ -1,8 +1,12 @@
 import {
   apiErrorSchema,
   currentUserSchema,
+  custodianCopiesResponseSchema,
+  custodianCopySchema,
   healthResponseSchema,
+  type ChangeableCopyStatus,
   type CurrentUser,
+  type CustodianCopy,
   type HealthResponse,
   type LoginRequest,
 } from '@cpe334-group/shared';
@@ -75,4 +79,21 @@ export async function logout(): Promise<void> {
       throw error;
     }
   }
+}
+
+// F-06 copy maintenance status (SDS 5.2).
+export async function fetchCustodianCopies(): Promise<CustodianCopy[]> {
+  const response = await send('/api/custodian/copies', { method: 'GET' });
+  return custodianCopiesResponseSchema.parse(await response.json()).items;
+}
+
+export async function changeCopyStatus(
+  copyId: number,
+  status: ChangeableCopyStatus,
+): Promise<CustodianCopy> {
+  const response = await send(`/api/custodian/copies/${copyId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  return custodianCopySchema.parse(await response.json());
 }

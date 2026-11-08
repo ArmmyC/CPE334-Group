@@ -169,7 +169,8 @@ describe('Supporting check: loading, empty, and error states (AC-SR02-03)', () =
     });
     renderApp('/custodian/copies');
 
-    expect(await screen.findByText('Loading...')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Copies' });
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('shows the empty sentence', async () => {
