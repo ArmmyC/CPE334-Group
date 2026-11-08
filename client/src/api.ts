@@ -1,8 +1,12 @@
 import {
   apiErrorSchema,
+  catalogResponseSchema,
   currentUserSchema,
+  equipmentTypeDetailSchema,
   healthResponseSchema,
+  type CatalogResponse,
   type CurrentUser,
+  type EquipmentTypeDetail,
   type HealthResponse,
   type LoginRequest,
 } from '@cpe334-group/shared';
@@ -75,4 +79,15 @@ export async function logout(): Promise<void> {
       throw error;
     }
   }
+}
+
+// F-02 catalog reads.
+export async function fetchCatalog(): Promise<CatalogResponse> {
+  const response = await send('/api/equipment-types', { method: 'GET' });
+  return catalogResponseSchema.parse(await response.json());
+}
+
+export async function fetchEquipmentType(id: string): Promise<EquipmentTypeDetail> {
+  const response = await send(`/api/equipment-types/${encodeURIComponent(id)}`, { method: 'GET' });
+  return equipmentTypeDetailSchema.parse(await response.json());
 }

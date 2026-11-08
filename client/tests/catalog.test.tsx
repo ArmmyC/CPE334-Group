@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -223,11 +223,19 @@ describe('TEST-F02-02 type detail page (AC-F02-02, FR-05)', () => {
 
 describe('Supporting check: detail states', () => {
   it('shows a loading message while the request is in flight', async () => {
-    stubApi({ ...asBorrower, 'GET /api/equipment-types/4': () => new Promise<Response>(() => {}) });
+    const fetchMock = stubApi({
+      ...asBorrower,
+      'GET /api/equipment-types/4': () => new Promise<Response>(() => {}),
+    });
 
     renderApp('/catalog/4');
 
-    expect(await screen.findByText('Loading...')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(
+        '/api/equipment-types/4',
+      ),
+    );
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('shows not found with a link back when the API returns 404', async () => {
