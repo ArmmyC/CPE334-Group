@@ -3,7 +3,7 @@ import type { Role } from '@cpe334-group/shared';
 import { authHandlers } from './auth/routes.js';
 import { createSessionService } from './auth/sessions.js';
 import type { AppDependencies } from './dependencies.js';
-import { healthHandler } from './health.js';
+import { healthHandler, readyHandler } from './health.js';
 
 // `public` needs nothing, `signed-in` needs a session, and a role needs a session with that role.
 export type Access = 'public' | 'signed-in' | Role;
@@ -30,6 +30,12 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       path: '/api/health',
       access: 'public',
       handler: healthHandler(deps.checkDatabase, deps.healthTimeoutMs ?? 2000),
+    },
+    {
+      method: 'get',
+      path: '/api/ready',
+      access: 'public',
+      handler: readyHandler(deps.checkReady, deps.healthTimeoutMs ?? 2000),
     },
     { method: 'post', path: '/api/auth/login', access: 'public', handler: auth.login },
     { method: 'post', path: '/api/auth/logout', access: 'signed-in', handler: auth.logout },
