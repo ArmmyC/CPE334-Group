@@ -4,6 +4,7 @@ import type { Role } from '@cpe334-group/shared';
 import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
+import { PendingRequestsPage } from './PendingRequestsPage';
 
 export function App() {
   return (
@@ -13,7 +14,7 @@ export function App() {
   );
 }
 
-// A page that a later feature replaces (F-02 catalog, F-04 pending requests).
+// A page that a later feature replaces (F-02 catalog).
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <section>
@@ -131,7 +132,7 @@ function Content() {
         path="/custodian/requests"
         element={
           <RequireRole role="CUSTODIAN">
-            <PlaceholderPage title="Pending requests" />
+            <PendingRequestsPage />
           </RequireRole>
         }
       />

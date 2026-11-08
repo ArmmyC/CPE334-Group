@@ -124,7 +124,9 @@ describe('TEST-F04-01 pending requests in the UI (AC-F04-01, FR-08)', () => {
     });
     renderApp('/custodian/requests');
 
-    expect(await screen.findByText('Loading...')).toBeInTheDocument();
+    // The session restore shows "Loading..." first, so wait for the page heading.
+    expect(await screen.findByRole('heading', { name: 'Pending requests' })).toBeInTheDocument();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('shows an error state with a Retry button that loads the list again', async () => {

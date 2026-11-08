@@ -1,15 +1,21 @@
 import {
   apiErrorSchema,
+  availableCopyListSchema,
   borrowRequestSchema,
+  checkoutResultSchema,
   currentUserSchema,
   healthResponseSchema,
   loanSchema,
+  pendingRequestListSchema,
+  type AvailableCopy,
   type BorrowRequest,
+  type CheckoutResult,
   type CreateRequest,
   type CurrentUser,
   type HealthResponse,
   type Loan,
   type LoginRequest,
+  type PendingRequest,
 } from '@cpe334-group/shared';
 
 // An API error in the shared shape (SDS 5.3), with `fields` for validation errors.
@@ -105,4 +111,25 @@ export async function submitRequest(input: CreateRequest): Promise<BorrowRequest
 export async function cancelRequest(id: number): Promise<BorrowRequest> {
   const response = await send(`/api/requests/${id}/cancel`, { method: 'POST' });
   return borrowRequestSchema.parse(await response.json());
+}
+
+// The Pending requests in the custodian's labs, oldest first (F-04).
+export async function fetchPendingRequests(): Promise<PendingRequest[]> {
+  const response = await send('/api/custodian/requests?status=PENDING', { method: 'GET' });
+  return pendingRequestListSchema.parse(await response.json()).items;
+}
+
+export async function fetchAvailableCopies(requestId: number): Promise<AvailableCopy[]> {
+  const response = await send(`/api/custodian/requests/${requestId}/available-copies`, {
+    method: 'GET',
+  });
+  return availableCopyListSchema.parse(await response.json()).items;
+}
+
+export async function checkoutCopy(requestId: number, copyId: number): Promise<CheckoutResult> {
+  const response = await send(`/api/custodian/requests/${requestId}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify({ copyId }),
+  });
+  return checkoutResultSchema.parse(await response.json());
 }
