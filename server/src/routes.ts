@@ -2,6 +2,8 @@ import type { RequestHandler } from 'express';
 import type { Role } from '@cpe334-group/shared';
 import { authHandlers } from './auth/routes.js';
 import { createSessionService } from './auth/sessions.js';
+import { checkoutHandlers } from './checkout/routes.js';
+import { createCheckoutService } from './checkout/service.js';
 import type { AppDependencies } from './dependencies.js';
 import { healthHandler } from './health.js';
 import { loanHandlers } from './loans/routes.js';
@@ -30,6 +32,9 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
   const requests = requestHandlers({
     requests: createRequestService({ prisma: deps.prisma, clock: deps.clock }),
   });
+  const checkout = checkoutHandlers({
+    checkout: createCheckoutService({ prisma: deps.prisma, clock: deps.clock }),
+  });
   const loans = loanHandlers({ loans: createLoanService({ prisma: deps.prisma }) });
 
   return [
@@ -51,5 +56,23 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       handler: requests.cancel,
     },
     { method: 'get', path: '/api/loans', access: 'BORROWER', handler: loans.list },
+    {
+      method: 'get',
+      path: '/api/custodian/requests',
+      access: 'CUSTODIAN',
+      handler: checkout.listPending,
+    },
+    {
+      method: 'get',
+      path: '/api/custodian/requests/:id/available-copies',
+      access: 'CUSTODIAN',
+      handler: checkout.listAvailableCopies,
+    },
+    {
+      method: 'post',
+      path: '/api/custodian/requests/:id/checkout',
+      access: 'CUSTODIAN',
+      handler: checkout.checkout,
+    },
   ];
 }
