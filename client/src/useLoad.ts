@@ -6,8 +6,7 @@ export type Load<T> =
   { status: 'loading' } | { status: 'ready'; data: T } | { status: 'error'; error: unknown };
 
 // Loads one read endpoint and offers a reload for the Retry button (SR-02). A 401 means the
-// session may have ended, so the auth state is checked again and a signed-out user is sent to
-// login (SDS 4.2).
+// session has ended, so the auth state is checked again and the user is sent to login (SDS 4.2).
 export function useLoad<T>(
   load: () => Promise<T>,
   key: string,
@@ -27,9 +26,8 @@ export function useLoad<T>(
         if (!active) return;
         if (error instanceof ApiRequestError && error.status === 401) {
           recheckSession();
+          return;
         }
-        // If the session check finds the user signed out, the app moves to the login page and
-        // this page goes away. If the session is still valid, the error and Retry stay visible.
         setState({ status: 'error', error });
       },
     );

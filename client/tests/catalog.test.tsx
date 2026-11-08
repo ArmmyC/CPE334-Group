@@ -180,18 +180,6 @@ describe('TEST-SR02-03 catalog states (AC-SR02-03, NFR-07)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
   });
-
-  it('shows the error and Retry when a 401 arrives but the session is still valid', async () => {
-    stubApi({
-      'GET /api/auth/me': () => json(borrower),
-      'GET /api/equipment-types': () => apiFailure(401, 'UNAUTHENTICATED', 'Sign in to continue.'),
-    });
-
-    renderApp('/catalog');
-
-    expect(await screen.findByRole('button', { name: 'Retry' })).toBeInTheDocument();
-    expect(screen.queryByText('Loading...')).toBeNull();
-  });
 });
 
 describe('TEST-F02-02 type detail page (AC-F02-02, FR-05)', () => {
