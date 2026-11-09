@@ -15,10 +15,11 @@ CONNECTION="$PROJECT:$REGION:cpe334-db"
 NUMBER="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 APP_ORIGIN="https://$SERVICE-$NUMBER.$REGION.run.app"
 
-gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
-docker build -t "$IMAGE:$SHA" .
-docker push "$IMAGE:$SHA"
-DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$SHA")"
+# Cloud Shell cannot always push to Artifact Registry over its Docker proxy, so Cloud Build
+# builds and pushes the image from this folder instead.
+gcloud services enable cloudbuild.googleapis.com --project "$PROJECT"
+gcloud builds submit --project "$PROJECT" --region "$REGION" --tag "$IMAGE:$SHA" .
+DIGEST="$IMAGE@$(gcloud artifacts docker images describe "$IMAGE:$SHA" --project "$PROJECT" --format='value(image_summary.digest)')"
 echo "Image: $DIGEST"
 
 gcloud run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$DIGEST" \
