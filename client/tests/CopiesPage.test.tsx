@@ -193,7 +193,7 @@ describe('Supporting check: loading, empty, and error states (AC-SR02-03)', () =
     });
     renderApp('/custodian/copies');
 
-    expect(await screen.findByText('Could not load copies.')).toBeInTheDocument();
+    expect(await screen.findByText('Something went wrong.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
     expect(await screen.findByRole('row', { name: /EMB-ARD-001/ })).toBeInTheDocument();

@@ -8,7 +8,9 @@ import { ApiRequestError, changeCopyStatus, fetchCustodianCopies } from './api';
 import { useAuth } from './auth';
 
 type Load =
-  { status: 'loading' } | { status: 'error' } | { status: 'loaded'; copies: CustodianCopy[] };
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'loaded'; copies: CustodianCopy[] };
 
 type Confirming = { copyId: number; target: ChangeableCopyStatus };
 
@@ -49,7 +51,15 @@ export function CopiesPage() {
         if (active) setLoad({ status: 'loaded', copies });
       })
       .catch((error: unknown) => {
-        if (active && !handleExpiredSession(error)) setLoad({ status: 'error' });
+        if (active && !handleExpiredSession(error)) {
+          setLoad({
+            status: 'error',
+            message:
+              error instanceof ApiRequestError && error.code !== 'UNEXPECTED_RESPONSE'
+                ? error.message
+                : 'Could not load copies.',
+          });
+        }
       });
     return () => {
       active = false;
@@ -108,7 +118,7 @@ export function CopiesPage() {
       {load.status === 'loading' && <p className="text-body-secondary">Loading...</p>}
       {load.status === 'error' && (
         <div className="alert alert-warning d-flex align-items-center gap-3">
-          <span>Could not load copies.</span>
+          <span>{load.message}</span>
           <button
             type="button"
             className="btn btn-outline-dark btn-sm"

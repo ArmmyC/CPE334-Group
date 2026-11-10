@@ -66,7 +66,7 @@ No migration. The feature reads and writes `copy` and reads `equipment_type`, `l
 | Method and path | Access | Request | Success | Errors |
 | --- | --- | --- | --- | --- |
 | `GET /api/custodian/copies` | Custodian | No query parameters | 200 `{ "items": [...] }` with the copies in the custodian's labs, sorted by lab name, then type name, then asset tag | 400 `VALIDATION_ERROR` for any query parameter, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower |
-| `PATCH /api/custodian/copies/:id` | Custodian | `{ "status": "AVAILABLE" or "IN_MAINTENANCE" }` | 200 with the changed copy | 400 `VALIDATION_ERROR` with `fields.status`, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower, 403 `INVALID_ORIGIN`, 404 `NOT_FOUND`, 409 `INVALID_STATUS`, 503 `SERVICE_BUSY` |
+| `PATCH /api/custodian/copies/:id` | Custodian | `{ "status": "AVAILABLE" or "IN_MAINTENANCE" }` | 200 with the changed copy | 400 `VALIDATION_ERROR` with `fields.status`, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower, 403 `INVALID_ORIGIN`, 404 `NOT_FOUND`, 409 `INVALID_STATUS`, 503 `SERVICE_BUSY` (arrives with #17: `sprint-1` has no `P2028` mapping before it, so until then a pool timeout returns 500) |
 
 Copy shape, defined in `shared/src/copies.ts`:
 
