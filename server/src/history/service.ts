@@ -2,7 +2,7 @@ import type { CopyStatus, LoanStatus, Prisma, RequestStatus } from '@prisma/clie
 import type { Clock } from '../clock.js';
 
 // One status change of a request, a loan, or a copy. `oldStatus` is null when the record is
-// created (SDS 3.3). The union keeps a request status from being recorded as a copy status.
+// created (SDS 3.2). The union keeps a request status from being recorded as a copy status.
 export type StatusChange = { actorId: number } & (
   | {
       entityType: 'REQUEST';
