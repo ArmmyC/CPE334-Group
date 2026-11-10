@@ -279,6 +279,17 @@ describe('Supporting check: detail states', () => {
 
     expect(await screen.findByRole('heading', { name: 'Arduino Uno R3' })).toBeInTheDocument();
   });
+
+  it('shows the API message and Retry when the API sends one', async () => {
+    stubApi({
+      ...asBorrower,
+      'GET /api/equipment-types/4': () => apiFailure(503, 'SERVICE_BUSY', 'The service is busy.'),
+    });
+    renderApp('/catalog/4');
+
+    expect(await screen.findByText('The service is busy.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
 });
 
 describe('Supporting check: route guard', () => {

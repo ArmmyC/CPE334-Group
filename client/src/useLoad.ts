@@ -12,7 +12,7 @@ export function useLoad<T>(
   load: () => Promise<T>,
   key: string,
 ): { state: Load<T>; reload: () => void } {
-  const { retry: recheckSession } = useAuth();
+  const { recheck: recheckSession } = useAuth();
   const [state, setState] = useState<Load<T>>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
 

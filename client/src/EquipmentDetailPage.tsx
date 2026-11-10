@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { ApiRequestError, fetchEquipmentType } from './api';
-import { useLoad } from './useLoad';
+import { errorMessage, useLoad } from './useLoad';
 
 function BackLink() {
   return <Link to="/catalog">Back to catalog</Link>;
@@ -27,7 +27,7 @@ export function EquipmentDetailPage() {
     return (
       <section>
         <div className="alert alert-warning d-flex align-items-center gap-3">
-          <span>Could not load this equipment type.</span>
+          <span>{errorMessage(state.error, 'Could not load this equipment type.')}</span>
           <button type="button" className="btn btn-outline-dark btn-sm" onClick={reload}>
             Retry
           </button>
