@@ -38,7 +38,8 @@ COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/server/prisma server/prisma
 COPY --from=build /app/client/dist client/dist
 # --ignore-scripts skipped the Prisma postinstall, so fetch its engines and generate the
-# client here, while the build still has network access.
+# client here, while the build still has network access. The engines script is an internal
+# Prisma path that the Prisma 7 upgrade may move; the Docker image CI job catches that.
 RUN node node_modules/@prisma/engines/scripts/postinstall.js \
  && node node_modules/prisma/build/index.js generate --schema server/prisma/schema.prisma
 USER node

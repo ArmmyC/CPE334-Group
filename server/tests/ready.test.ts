@@ -14,7 +14,10 @@ describe('GET /api/ready', () => {
     const response = await request(createTestApp()).get('/api/ready');
 
     expect(response.status).toBe(200);
-    expect(readyResponseSchema.parse(response.body)).toEqual({ status: 'ready' });
+    expect(readyResponseSchema.parse(response.body)).toEqual({
+      status: 'ready',
+      database: 'connected',
+    });
   });
 
   it('reports 503 when the readiness check fails', async () => {
@@ -27,7 +30,7 @@ describe('GET /api/ready', () => {
     const response = await request(app).get('/api/ready');
 
     expect(response.status).toBe(503);
-    expect(response.body).toEqual({ status: 'not-ready' });
+    expect(response.body).toEqual({ status: 'not_ready' });
   });
 
   it('reports 503 when the readiness check does not finish in time', async () => {
@@ -39,7 +42,7 @@ describe('GET /api/ready', () => {
     const response = await request(app).get('/api/ready');
 
     expect(response.status).toBe(503);
-    expect(response.body).toEqual({ status: 'not-ready' });
+    expect(response.body).toEqual({ status: 'not_ready' });
   });
 
   it('does not leak the failure reason', async () => {
@@ -52,5 +55,23 @@ describe('GET /api/ready', () => {
     const response = await request(app).get('/api/ready');
 
     expect(JSON.stringify(response.body)).not.toContain('secret-user');
+  });
+});
+
+// The real query, not a stub: an unfinished migration row must make checkReady reject.
+describe('checkReady against the database', () => {
+  it('rejects while a migration row is unfinished, and passes again after it is removed', async () => {
+    const { checkReady } = await import('../src/db.js');
+    await expect(checkReady()).resolves.toBeUndefined();
+
+    await prisma.$executeRaw`INSERT INTO _prisma_migrations (id, checksum, migration_name, started_at, applied_steps_count)
+      VALUES ('ready-test-unfinished', 'x', 'ready_test_unfinished', now(), 0)`;
+    try {
+      await expect(checkReady()).rejects.toThrow('not finished');
+    } finally {
+      await prisma.$executeRaw`DELETE FROM _prisma_migrations WHERE id = 'ready-test-unfinished'`;
+    }
+
+    await expect(checkReady()).resolves.toBeUndefined();
   });
 });
