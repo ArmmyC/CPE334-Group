@@ -157,6 +157,7 @@ describe('TEST-F04-01 pending requests in assigned labs (AC-F04-01, FR-08, BR-15
     });
     expect(unknown.status).toBe(400);
     expect(apiErrorSchema.parse(unknown.body).error.code).toBe('VALIDATION_ERROR');
+    expect(unknown.body.error.fields).toEqual({ overdue: 'Unknown parameter.' });
   });
 });
 

@@ -44,3 +44,21 @@ describe('Supporting check: ids beyond the 32-bit range (SDS 5.1)', () => {
     expect(hugeCopy.body.error.fields.copyId).toBeDefined();
   });
 });
+
+describe('Supporting check: ids that are not plain digits (SDS 5.1)', () => {
+  it.each(['1e3', '0x10', '%2012', '1.0', '-1', '+1'])(
+    'gives 404 for the request id %s',
+    async (id) => {
+      const app = createTestApp();
+      const custodian = await createAccount('CUSTODIAN');
+      const cookie = sessionCookie(await logIn(app, custodian.email, testPassword))!;
+
+      const response = await request(app)
+        .get(`/api/custodian/requests/${id}/available-copies`)
+        .set('Cookie', cookie);
+
+      expect(response.status).toBe(404);
+      expect(response.body.error.code).toBe('NOT_FOUND');
+    },
+  );
+});

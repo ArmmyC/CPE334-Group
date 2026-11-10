@@ -7,6 +7,10 @@ import type { CheckoutService } from './service.js';
 // A route id arrives as text. A value that is not a positive integer cannot be a request this
 // custodian can see, so it gets the same 404 as a missing one (SDS 5.1).
 function parseId(value: string): number {
+  // Digits only: Number() would also accept 1e3, 0x10, " 12", and 1.0.
+  if (!/^\d+$/.test(value)) {
+    throw new HttpError(404, 'NOT_FOUND', 'This request could not be found.');
+  }
   const id = Number(value);
   // 2147483647 is the largest PostgreSQL integer, so a larger id cannot exist.
   if (!Number.isInteger(id) || id <= 0 || id > 2_147_483_647) {
@@ -19,8 +23,14 @@ function parseId(value: string): number {
 // Sprint 3, and an unknown parameter is refused (SDS 5.1).
 function checkListQuery(query: Record<string, unknown>) {
   const message = 'Check the highlighted fields.';
-  if (Object.keys(query).some((key) => key !== 'status')) {
-    throw new HttpError(400, 'VALIDATION_ERROR', message);
+  const unknown = Object.keys(query).filter((key) => key !== 'status');
+  if (unknown.length > 0) {
+    throw new HttpError(
+      400,
+      'VALIDATION_ERROR',
+      message,
+      Object.fromEntries(unknown.map((name) => [name, 'Unknown parameter.'])),
+    );
   }
   if (query.status !== undefined && query.status !== 'PENDING') {
     throw new HttpError(400, 'VALIDATION_ERROR', message, { status: 'Use status=PENDING.' });

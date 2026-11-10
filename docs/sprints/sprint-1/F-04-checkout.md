@@ -163,7 +163,7 @@ Supporting checks that have no AC of their own:
 ## 7. Definition of Done
 
 - The contract is committed before the tests, and the tests fail before the implementation.
-- TEST-F04-01 to TEST-F04-09 and the supporting checks pass. TEST-F04-09 is extended to the catalog when F-02 merges. TEST-E2E-01 is completed when F-02 merges.
+- TEST-F04-01 to TEST-F04-09 and the supporting checks pass. TEST-F04-09 is extended to the catalog when F-02 merges. TEST-E2E-01 is completed when F-02 merges. The display half of AC-F04-03 (checkout time shown in Asia/Bangkok) is checked by `client/tests/requests.test.tsx`, test "shows my requests and loans...", where 03:00 UTC shows as 10:00. The My requests page is F-03.
 - Lint, format, build, and all existing tests pass.
 - The `TODO(F-07)` calls in F-03 are replaced in their own commit, with tests, and @ArmmyC has been told.
 - Reviewed by @ArmmyC and merged into `sprint-1`.

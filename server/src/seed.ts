@@ -4,7 +4,7 @@ import { hashPassword } from './auth/password.js';
 // Synthetic seed data from SRS assumption A-04. Every person and asset tag here is invented (A-05).
 // The seed only creates missing rows and never updates existing ones, apart from the smoke borrower's
 // password hash, so it is safe on every deploy (SDS section 3.5, NFR-10). The sample On loan copy and
-// its loan are added by F-04 through checkout.
+// its loan are added with F-05 (Sprint 2) through checkout, not by F-04 (SDS section 3.5).
 
 export type SeedEnv = {
   SEED_USER_PASSWORD?: string;
