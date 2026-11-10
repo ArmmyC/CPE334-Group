@@ -1,6 +1,7 @@
 # Lab 5: CI gate, container image, and readiness check
 
 Product: Lab Equipment Borrowing System
+Issues: #32 (cloud-ready application), #33 (container image), #34 (CI on every pull request)
 Sources: [System-Level SDS](../../system-sds.md) section 10, [Feature inventory](../../features.md) SR-05, [SRS](../../srs.md) NFR-10 and NFR-11
 
 This file is the contract for the first Lab 5 change. The GCP deployment workflow and the cloud setup follow in a later change, once the GCP project exists.
