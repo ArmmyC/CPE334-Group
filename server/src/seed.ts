@@ -1,10 +1,14 @@
 import type { CopyStatus, PrismaClient, Role } from '@prisma/client';
 import { hashPassword } from './auth/password.js';
+import { createCheckoutService } from './checkout/service.js';
+import { HttpError } from './http/errors.js';
+import { createRequestService } from './requests/service.js';
 
 // Synthetic seed data from SRS assumption A-04. Every person and asset tag here is invented (A-05).
 // The seed only creates missing rows and never updates existing ones, apart from the smoke borrower's
 // password hash, so it is safe on every deploy (SDS section 3.5, NFR-10). The sample On loan copy and
-// its loan are added with F-05 (Sprint 2) through checkout, not by F-04 (SDS section 3.5).
+// its loan are added by F-04 through the normal request and checkout services, with a seeded
+// custodian as the actor, so the loan has its history. They are created only while no loan exists.
 
 export type SeedEnv = {
   SEED_USER_PASSWORD?: string;
@@ -12,9 +16,25 @@ export type SeedEnv = {
   SMOKE_PASSWORD?: string;
 };
 
-export type SeedSummary = { users: number; labs: number; types: number; copies: number };
+export type SeedSummary = {
+  users: number;
+  labs: number;
+  types: number;
+  copies: number;
+  loans: number;
+};
 
 const MIN_PASSWORD_LENGTH = 12;
+
+// The one sample loan: a borrower holds a Raspberry Pi 4 from the lab of the custodian who checked it out.
+const sampleLoan = {
+  borrower: 'borrower3@example.com',
+  custodian: 'custodian.embedded@example.com',
+  lab: 'Embedded Systems Lab',
+  type: 'Raspberry Pi 4',
+  assetTag: 'EMB-RPI-001',
+  purpose: 'Sample loan created by the seed.',
+};
 
 const labs = ['Embedded Systems Lab', 'Network Lab'];
 
@@ -136,7 +156,7 @@ export async function seed(
   // Every insert is one `INSERT ... ON CONFLICT DO NOTHING` (skipDuplicates), so a row that exists,
   // or that an overlapping run inserts first, is skipped instead of failing the run. The returned
   // count is the number of rows this run created.
-  const created: SeedSummary = { users: 0, labs: 0, types: 0, copies: 0 };
+  const created: SeedSummary = { users: 0, labs: 0, types: 0, copies: 0, loans: 0 };
 
   created.labs = (
     await prisma.lab.createMany({ data: labs.map((name) => ({ name })), skipDuplicates: true })
@@ -220,6 +240,29 @@ export async function seed(
       skipDuplicates: true,
     })
   ).count;
+
+  // Create only: with any loan present (even a returned one) or the sample copy not Available, the
+  // seed adds nothing. The request service refuses a second request, so overlapping runs add one loan.
+  const borrowerId = userIds.get(sampleLoan.borrower)!;
+  const custodianId = userIds.get(sampleLoan.custodian)!;
+  const typeId = typeIds.get(`${labIds.get(sampleLoan.lab)}:${sampleLoan.type}`)!;
+  const copy = await prisma.copy.findUnique({ where: { assetTag: sampleLoan.assetTag } });
+  if ((await prisma.loan.count()) === 0 && copy?.status === 'AVAILABLE') {
+    const clock = { now: () => now };
+    try {
+      const request = await createRequestService({ prisma, clock }).submit(borrowerId, {
+        equipmentTypeId: typeId,
+        purpose: sampleLoan.purpose,
+      });
+      await createCheckoutService({ prisma, clock }).checkout(custodianId, request.id, copy.id);
+      created.loans = 1;
+    } catch (error) {
+      // A rule refusal means another run or a user got there first, so there is nothing to add.
+      if (!(error instanceof HttpError)) {
+        throw error;
+      }
+    }
+  }
 
   return created;
 }

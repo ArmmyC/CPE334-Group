@@ -12,6 +12,7 @@ async function countRows() {
     assignments: await prisma.labAssignment.count(),
     types: await prisma.equipmentType.count(),
     copies: await prisma.copy.count(),
+    loans: await prisma.loan.count(),
   };
 }
 
@@ -33,6 +34,7 @@ describe('seed', () => {
       assignments: 2,
       types: 6,
       copies: expect.any(Number),
+      loans: 1,
     });
     expect(await prisma.user.count({ where: { role: 'CUSTODIAN' } })).toBe(2);
     expect(await prisma.copy.count({ where: { status: 'AVAILABLE' } })).toBeGreaterThan(0);
@@ -40,6 +42,83 @@ describe('seed', () => {
 
     const custodianLabs = await prisma.labAssignment.findMany({ select: { labId: true } });
     expect(new Set(custodianLabs.map(({ labId }) => labId)).size).toBe(2);
+  });
+
+  it('creates one sample loan through checkout, with its history, and never a second', async () => {
+    const first = await seed(prisma, seedEnv);
+    const second = await seed(prisma, seedEnv);
+
+    expect([first.loans, second.loans]).toEqual([1, 0]);
+    const loan = await prisma.loan.findFirstOrThrow({
+      include: { copy: true, borrower: true, checkedOutBy: true, request: true },
+    });
+    expect(loan.status).toBe('ACTIVE');
+    expect(loan.copy).toMatchObject({ assetTag: 'EMB-RPI-001', status: 'ON_LOAN' });
+    expect(loan.borrower.email).toBe('borrower3@example.com');
+    expect(loan.checkedOutBy.email).toBe('custodian.embedded@example.com');
+    expect(loan.request.status).toBe('FULFILLED');
+
+    // The request creation, then the three entries of the checkout, in order.
+    const history = await prisma.statusHistory.findMany({ orderBy: { id: 'asc' } });
+    expect(
+      history.map(({ entityType, entityId, oldStatus, newStatus, actorId }) => ({
+        entityType,
+        entityId,
+        oldStatus,
+        newStatus,
+        actorId,
+      })),
+    ).toEqual([
+      {
+        entityType: 'REQUEST',
+        entityId: loan.requestId,
+        oldStatus: null,
+        newStatus: 'PENDING',
+        actorId: loan.borrowerId,
+      },
+      {
+        entityType: 'REQUEST',
+        entityId: loan.requestId,
+        oldStatus: 'PENDING',
+        newStatus: 'FULFILLED',
+        actorId: loan.checkedOutById,
+      },
+      {
+        entityType: 'COPY',
+        entityId: loan.copyId,
+        oldStatus: 'AVAILABLE',
+        newStatus: 'ON_LOAN',
+        actorId: loan.checkedOutById,
+      },
+      {
+        entityType: 'LOAN',
+        entityId: loan.id,
+        oldStatus: null,
+        newStatus: 'ACTIVE',
+        actorId: loan.checkedOutById,
+      },
+    ]);
+  });
+
+  it('adds no sample loan when a loan exists or the sample copy is not Available', async () => {
+    await seed(prisma, seedEnv);
+    await prisma.loan.update({
+      where: { requestId: (await prisma.loan.findFirstOrThrow()).requestId },
+      data: { status: 'RETURNED' },
+    });
+    await prisma.copy.update({ where: { assetTag: 'EMB-RPI-001' }, data: { status: 'AVAILABLE' } });
+    expect((await seed(prisma, seedEnv)).loans).toBe(0);
+    expect(await prisma.loan.count()).toBe(1);
+
+    await resetDatabase();
+    await seed(prisma, seedEnv);
+    await prisma.loan.deleteMany();
+    await prisma.copy.update({
+      where: { assetTag: 'EMB-RPI-001' },
+      data: { status: 'IN_MAINTENANCE' },
+    });
+    expect((await seed(prisma, seedEnv)).loans).toBe(0);
+    expect(await prisma.loan.count()).toBe(0);
   });
 
   it('is repeatable and never resets a changed copy status', async () => {
@@ -75,8 +154,16 @@ describe('seed', () => {
       labs: first.labs + second.labs,
       types: first.types + second.types,
       copies: first.copies + second.copies,
-    }).toEqual({ users: 6, labs: 2, types: 6, copies: 13 });
-    expect(await countRows()).toEqual({ users: 6, labs: 2, assignments: 2, types: 6, copies: 13 });
+      loans: first.loans + second.loans,
+    }).toEqual({ users: 6, labs: 2, types: 6, copies: 13, loans: 1 });
+    expect(await countRows()).toEqual({
+      users: 6,
+      labs: 2,
+      assignments: 2,
+      types: 6,
+      copies: 13,
+      loans: 1,
+    });
   });
 
   it('never stores the plain password', async () => {

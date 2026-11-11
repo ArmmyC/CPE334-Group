@@ -6,7 +6,7 @@ import { seed } from './seed.js';
 try {
   const created = await seed(prisma, process.env);
   console.log(
-    `Seed complete. Created ${created.labs} labs, ${created.users} users, ${created.types} equipment types, and ${created.copies} copies.`,
+    `Seed complete. Created ${created.labs} labs, ${created.users} users, ${created.types} equipment types, ${created.copies} copies, and ${created.loans} sample loans.`,
   );
 } catch (error) {
   console.error(`Seed failed: ${error instanceof Error ? error.message : String(error)}`);
