@@ -94,7 +94,7 @@ Error codes and messages added by this feature, all in the shared shape:
 | Refusal | A 409 shows the API `message` above the table. A 400 with `fields.status` shows the message next to the status control in the row (AC-SR02-02). The list reloads after a 409, because the copy probably changed. |
 | Loading | "Loading..." while the list request is in flight (SR-02). |
 | Empty | "No copies in your labs." when the list is empty. |
-| Error | "Could not load copies." with a Retry button. The Retry button sends the request again. A 401 sends the user to login. |
+| Error | The page shows the message from the API and falls back to "Could not load copies." when the API sends none. A Retry button sends the request again. A 401 sends the user to login. |
 | Navigation | Custodians get a "Copies" link in the header. The route guard from F-01 sends a borrower to their home page. |
 
 ## 4. Acceptance criteria
@@ -132,7 +132,7 @@ Supporting checks that have no AC of their own:
 | Concurrent switches | API | Two parallel calls that set one Available copy to `IN_MAINTENANCE` return one 200 and one 409, and exactly one history row exists. |
 | Origin check | API | A PATCH with `Origin: https://evil.example` returns 403 `INVALID_ORIGIN` and changes nothing. |
 | Route table | API | Both routes are in the route table with access `CUSTODIAN`, so TEST-SR01-01 returns 401 for them without a session. |
-| Loading, empty, and error states | UI | The page shows "Loading...", "No copies in your labs.", and "Could not load copies." with a Retry button, as TEST-SR02-03 requires. A 401 returns the user to the login page. |
+| Loading, empty, and error states | UI | The page shows "Loading...", "No copies in your labs.", and the API error message (falling back to "Could not load copies.") with a Retry button, as TEST-SR02-03 requires. A 401 returns the user to the login page. |
 | Refusal messages | UI | A 409 shows the API message above the table and reloads the list. A 400 with `fields.status` shows the message in the row (TEST-SR02-02). |
 | Actions by status | UI | An Available copy offers "Set In maintenance", an In maintenance copy offers "Set Available", and On loan and Retired copies offer no button. Cancel closes the confirmation and sends nothing. |
 | Header link and guard | UI | A custodian sees "Copies" in the header and a borrower does not. A borrower at `/custodian/copies` is sent to `/catalog`. |
