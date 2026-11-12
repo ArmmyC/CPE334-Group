@@ -33,9 +33,9 @@ export function readyHandler(checkReady: () => Promise<void>, timeoutMs: number)
   return async (_request, response) => {
     try {
       await withTimeout(checkReady(), timeoutMs);
-      response.json({ status: 'ready' } satisfies ReadyResponse);
+      response.json({ status: 'ready', database: 'connected' } satisfies ReadyResponse);
     } catch {
-      response.status(503).json({ status: 'not-ready' } satisfies ReadyResponse);
+      response.status(503).json({ status: 'not_ready' } satisfies ReadyResponse);
     }
   };
 }
