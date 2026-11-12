@@ -2,6 +2,8 @@ import type { RequestHandler } from 'express';
 import type { Role } from '@cpe334-group/shared';
 import { authHandlers } from './auth/routes.js';
 import { createSessionService } from './auth/sessions.js';
+import { catalogHandlers } from './catalog/routes.js';
+import { createCatalogService } from './catalog/service.js';
 import type { AppDependencies } from './dependencies.js';
 import { healthHandler } from './health.js';
 
@@ -24,6 +26,8 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
     secureCookies: deps.secureCookies ?? false,
   });
 
+  const catalog = catalogHandlers({ catalog: createCatalogService(deps) });
+
   return [
     {
       method: 'get',
@@ -34,5 +38,12 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
     { method: 'post', path: '/api/auth/login', access: 'public', handler: auth.login },
     { method: 'post', path: '/api/auth/logout', access: 'signed-in', handler: auth.logout },
     { method: 'get', path: '/api/auth/me', access: 'signed-in', handler: auth.me },
+    { method: 'get', path: '/api/equipment-types', access: 'BORROWER', handler: catalog.list },
+    {
+      method: 'get',
+      path: '/api/equipment-types/:id',
+      access: 'BORROWER',
+      handler: catalog.detail,
+    },
   ];
 }
