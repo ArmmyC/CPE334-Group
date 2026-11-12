@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   COPY_STATUS_LABEL,
   type ChangeableCopyStatus,
@@ -6,11 +6,7 @@ import {
 } from '@cpe334-group/shared';
 import { ApiRequestError, changeCopyStatus, fetchCustodianCopies } from './api';
 import { useAuth } from './auth';
-
-type Load =
-  | { status: 'loading' }
-  | { status: 'error'; message: string }
-  | { status: 'loaded'; copies: CustodianCopy[] };
+import { errorMessage, useLoad } from './useLoad';
 
 type Confirming = { copyId: number; target: ChangeableCopyStatus };
 
@@ -23,53 +19,13 @@ const SWITCH_TO: Partial<Record<CustodianCopy['status'], ChangeableCopyStatus>> 
 // F-06: the copies in the custodian's labs, with a confirmed switch between Available and
 // In maintenance. The API decides what is allowed, and the UI only shows its answer.
 export function CopiesPage() {
-  const { retry: restoreSession } = useAuth();
-  const [load, setLoad] = useState<Load>({ status: 'loading' });
+  const { recheck } = useAuth();
+  const { state: load, reload, refresh } = useLoad(fetchCustodianCopies, 'custodian-copies');
   const [confirming, setConfirming] = useState<Confirming | null>(null);
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<{ copyId: number; message: string } | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
-
-  // A 401 means the session ended, so the auth context checks it again and shows the login page.
-  const handleExpiredSession = useCallback(
-    (error: unknown) => {
-      if (error instanceof ApiRequestError && error.status === 401) {
-        restoreSession();
-        return true;
-      }
-      return false;
-    },
-    [restoreSession],
-  );
-
-  useEffect(() => {
-    let active = true;
-    fetchCustodianCopies()
-      .then((copies) => {
-        if (active) setLoad({ status: 'loaded', copies });
-      })
-      .catch((error: unknown) => {
-        if (active && !handleExpiredSession(error)) {
-          setLoad({
-            status: 'error',
-            message:
-              error instanceof ApiRequestError && error.code !== 'UNEXPECTED_RESPONSE'
-                ? error.message
-                : 'Could not load copies.',
-          });
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [attempt, handleExpiredSession]);
-
-  function reload(showLoading: boolean) {
-    if (showLoading) setLoad({ status: 'loading' });
-    setAttempt((count) => count + 1);
-  }
 
   function clearMessages() {
     setFieldError(null);
@@ -84,9 +40,13 @@ export function CopiesPage() {
       await changeCopyStatus(copy.id, target);
       setConfirming(null);
       setSuccess(`${copy.assetTag} is now ${COPY_STATUS_LABEL[target]}.`);
-      reload(false);
+      refresh();
     } catch (error) {
-      if (handleExpiredSession(error)) return;
+      // A 401 means the session ended, so the auth context checks it again (SDS 4.2).
+      if (error instanceof ApiRequestError && error.status === 401) {
+        recheck();
+        return;
+      }
       if (error instanceof ApiRequestError && error.fields.status) {
         setFieldError({ copyId: copy.id, message: error.fields.status });
       } else {
@@ -95,7 +55,7 @@ export function CopiesPage() {
           error instanceof ApiRequestError ? error.message : 'Could not reach the server.',
         );
         // A refusal usually means the copy changed since the list loaded.
-        if (error instanceof ApiRequestError && error.status === 409) reload(false);
+        if (error instanceof ApiRequestError && error.status === 409) refresh();
       }
     } finally {
       setSaving(false);
@@ -118,20 +78,16 @@ export function CopiesPage() {
       {load.status === 'loading' && <p className="text-body-secondary">Loading...</p>}
       {load.status === 'error' && (
         <div className="alert alert-warning d-flex align-items-center gap-3">
-          <span>{load.message}</span>
-          <button
-            type="button"
-            className="btn btn-outline-dark btn-sm"
-            onClick={() => reload(true)}
-          >
+          <span>{errorMessage(load.error, 'Could not load copies.')}</span>
+          <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => reload()}>
             Retry
           </button>
         </div>
       )}
-      {load.status === 'loaded' && load.copies.length === 0 && (
+      {load.status === 'ready' && load.data.length === 0 && (
         <p className="text-body-secondary">No copies in your labs.</p>
       )}
-      {load.status === 'loaded' && load.copies.length > 0 && (
+      {load.status === 'ready' && load.data.length > 0 && (
         <div className="table-responsive">
           <table className="table align-middle">
             <thead>
@@ -144,7 +100,7 @@ export function CopiesPage() {
               </tr>
             </thead>
             <tbody>
-              {load.copies.map((copy) => {
+              {load.data.map((copy) => {
                 const target = SWITCH_TO[copy.status];
                 const asking = confirming?.copyId === copy.id ? confirming : null;
                 const errorId = `copy-${copy.id}-error`;

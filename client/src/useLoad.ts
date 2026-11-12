@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiRequestError } from './api';
 import { useAuth } from './auth';
 
@@ -11,14 +11,17 @@ export type Load<T> =
 export function useLoad<T>(
   load: () => Promise<T>,
   key: string,
-): { state: Load<T>; reload: () => void } {
+): { state: Load<T>; reload: () => void; refresh: () => void } {
   const { recheck: recheckSession } = useAuth();
   const [state, setState] = useState<Load<T>>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  // A reload after a change can keep the current data on screen instead of showing Loading.
+  const quiet = useRef(false);
 
   useEffect(() => {
     let active = true;
-    setState({ status: 'loading' });
+    if (!quiet.current) setState({ status: 'loading' });
+    quiet.current = false;
     load().then(
       (data) => {
         if (active) setState({ status: 'ready', data });
@@ -41,7 +44,12 @@ export function useLoad<T>(
   }, [key, attempt]);
 
   const reload = useCallback(() => setAttempt((count) => count + 1), []);
-  return { state, reload };
+  // Loads again without the Loading state, for a list that just changed.
+  const refresh = useCallback(() => {
+    quiet.current = true;
+    setAttempt((count) => count + 1);
+  }, []);
+  return { state, reload, refresh };
 }
 
 // The message for a failed load. The API's own message is shown when it sent one.
