@@ -79,7 +79,7 @@ One-time setup by the project owner:
 2. After the first deploy creates the service, allow public access once (the deploy account may not change IAM):
    `gcloud run services add-iam-policy-binding cpe334-app --region asia-southeast1 --member allUsers --role roles/run.invoker`
 
-Run `BASE_URL=... SMOKE_EMAIL=... SMOKE_PASSWORD=... infra/smoke.sh` to check any instance by hand. After grading, delete the Cloud SQL instance, the Cloud Run service and job, and the project.
+`infra/gcp/03-manual-deploy.sh` runs the same build, migrate, and deploy steps by hand from Cloud Shell as the project owner, for a first try or as a fallback. Run `BASE_URL=... SMOKE_EMAIL=... SMOKE_PASSWORD=... infra/smoke.sh` to check any instance by hand. After grading, delete the Cloud SQL instance, the Cloud Run service and job, and the project.
 
 ### Seeded accounts
 
