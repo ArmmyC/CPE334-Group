@@ -52,19 +52,28 @@ for runner in run-runtime run-migrate; do
     --member "serviceAccount:$(sa github-deployer)" --role roles/iam.serviceAccountUser --quiet >/dev/null
 done
 
-# GitHub Actions signs in without a key. Only workflows of this repository are accepted.
+# GitHub Actions signs in without a key. A token is accepted only from this repository (by
+# name and by numeric ID, so a renamed or recreated repository does not match), on main, from
+# the deploy workflow on main, in a job that uses the demo environment. That means the demo
+# approval cannot be skipped by a workflow file on another branch.
+REPO_ID="${REPO_ID:-1444383581}"
+OWNER_ID="${OWNER_ID:-186667389}"
+CONDITION="assertion.repository == '$GITHUB_REPO'"
+CONDITION="$CONDITION && assertion.repository_id == '$REPO_ID' && assertion.repository_owner_id == '$OWNER_ID'"
+CONDITION="$CONDITION && assertion.ref == 'refs/heads/main'"
+CONDITION="$CONDITION && assertion.sub == 'repo:$GITHUB_REPO:environment:demo'"
+CONDITION="$CONDITION && assertion.job_workflow_ref == '$GITHUB_REPO/.github/workflows/deploy.yml@refs/heads/main'"
+MAPPING="google.subject=assertion.sub,attribute.repository=assertion.repository"
+
 gcloud iam workload-identity-pools describe "$POOL" --location global >/dev/null 2>&1 ||
   gcloud iam workload-identity-pools create "$POOL" --location global --display-name "GitHub"
-gcloud iam workload-identity-pools providers describe "$PROVIDER" \
-  --workload-identity-pool "$POOL" --location global >/dev/null 2>&1 ||
-  gcloud iam workload-identity-pools providers create-oidc "$PROVIDER" \
-    --workload-identity-pool "$POOL" --location global \
-    --issuer-uri "https://token.actions.githubusercontent.com" \
-    --attribute-mapping "google.subject=assertion.sub,attribute.repository=assertion.repository" \
-    --attribute-condition "assertion.repository == '$GITHUB_REPO'"
-gcloud iam service-accounts add-iam-policy-binding "$(sa github-deployer)" \
-  --role roles/iam.workloadIdentityUser --quiet >/dev/null \
-  --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository/$GITHUB_REPO"
+if gcloud iam workload-identity-pools providers describe "$PROVIDER"   --workload-identity-pool "$POOL" --location global >/dev/null 2>&1; then
+  # Running again also tightens a provider that an earlier version of this script created.
+  gcloud iam workload-identity-pools providers update-oidc "$PROVIDER"     --workload-identity-pool "$POOL" --location global     --attribute-mapping "$MAPPING" --attribute-condition "$CONDITION"
+else
+  gcloud iam workload-identity-pools providers create-oidc "$PROVIDER"     --workload-identity-pool "$POOL" --location global     --issuer-uri "https://token.actions.githubusercontent.com"     --attribute-mapping "$MAPPING" --attribute-condition "$CONDITION"
+fi
+gcloud iam service-accounts add-iam-policy-binding "$(sa github-deployer)"   --role roles/iam.workloadIdentityUser --quiet   --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository/$GITHUB_REPO" >/dev/null
 
 echo
 echo "Done. Set these as GitHub environment variables on the demo environment:"
