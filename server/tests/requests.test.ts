@@ -381,6 +381,40 @@ describe('Supporting checks for borrow requests (SDS 5.3, SR-02)', () => {
     expect(await prisma.borrowRequest.count({ where: { equipmentTypeId: 987654 } })).toBe(0);
   });
 
+  it('returns 400 for an equipment type id above the 32-bit integer range', async () => {
+    const app = createTestApp();
+    const { cookie } = await signIn(app, 'BORROWER');
+
+    // The largest 32-bit id is valid input, so it reaches the lookup and gets 404.
+    const largestId = await submit(app, cookie, { equipmentTypeId: 2_147_483_647 });
+    const aboveRange = await submit(app, cookie, { equipmentTypeId: 2_147_483_648 });
+    const huge = await submit(app, cookie, { equipmentTypeId: 99_999_999_999 });
+
+    expect(largestId.status).toBe(404);
+    for (const response of [aboveRange, huge]) {
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      expect(response.body.error.fields).toHaveProperty('equipmentTypeId');
+    }
+    expect(await prisma.borrowRequest.count()).toBe(0);
+  });
+
+  it('returns 404 when cancelling a request id above the 32-bit integer range', async () => {
+    const app = createTestApp();
+    const { account: borrower, cookie } = await signIn(app, 'BORROWER');
+    const type = await createEquipmentType();
+    const ownRequest = await createRequest(borrower.id, type.id);
+
+    // Control: the caller can cancel their own request, so a 404 below is not a missing route.
+    expect((await cancel(app, cookie, ownRequest.id)).status).toBe(200);
+
+    for (const id of [2_147_483_647, 2_147_483_648, 99_999_999_999]) {
+      const response = await cancel(app, cookie, id);
+      expect(response.status).toBe(404);
+      expect(response.body.error.code).toBe('NOT_FOUND');
+    }
+  });
+
   it('stores a purpose of spaces only as null', async () => {
     const app = createTestApp();
     const { cookie } = await signIn(app, 'BORROWER');
