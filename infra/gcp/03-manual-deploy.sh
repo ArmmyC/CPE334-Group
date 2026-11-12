@@ -9,6 +9,18 @@ REGION="${REGION:-asia-southeast1}"
 SERVICE=cpe334-app
 JOB=cpe334-migrate
 SMOKE_EMAIL="${SMOKE_EMAIL:-smoke.borrower@example.com}"
+
+# The image is labelled with the commit SHA, so the folder must be exactly main: no local
+# changes and no other branch, or the SHA would not describe the code that runs (R-08).
+git fetch -q origin main
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Stop: the working folder has uncommitted changes." >&2
+  exit 1
+fi
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+  echo "Stop: HEAD is not origin/main. Run: git checkout main && git pull" >&2
+  exit 1
+fi
 SHA="$(git rev-parse HEAD)"
 IMAGE="$REGION-docker.pkg.dev/$PROJECT/cpe334/app"
 CONNECTION="$PROJECT:$REGION:cpe334-db"
