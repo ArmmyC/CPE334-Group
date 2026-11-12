@@ -5,11 +5,15 @@ import { z } from 'zod';
 
 export const purposeMaxLength = 500;
 
+// Ids are 32-bit integer columns, so a larger value cannot be a real equipment type.
+const maxId = 2_147_483_647;
+
 export const createRequestSchema = z.object({
   equipmentTypeId: z
     .number({ error: 'Choose an equipment type.' })
     .int('Choose an equipment type.')
-    .positive('Choose an equipment type.'),
+    .positive('Choose an equipment type.')
+    .max(maxId, 'Choose an equipment type.'),
   purpose: z
     .string({ error: 'Enter a purpose or leave it empty.' })
     .max(purposeMaxLength, 'Use a purpose of at most 500 characters.')
