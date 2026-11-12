@@ -2,7 +2,8 @@
 # Lab 5, SDS section 10: the billable and stateful GCP resources.
 # Run it in Cloud Shell, signed in as the project owner. Safe to run again: it never
 # replaces an existing instance, user, or secret. Secret values are generated here and are
-# never printed.
+# never printed. DATABASE_URL carries connection_limit=5 (SDS 2.5, 9.1). A DATABASE_URL secret
+# created by an older run is not replaced: add a new version with that parameter by hand.
 set -euo pipefail
 
 PROJECT="${PROJECT:-cpe334-lab-equipment}"
@@ -65,7 +66,7 @@ if ! gcloud secrets describe DATABASE_URL >/dev/null 2>&1; then
   else
     gcloud sql users create "$DB_USER" --instance "$INSTANCE" --password "$DB_PASSWORD"
   fi
-  printf '%s' "postgresql://$DB_USER:$DB_PASSWORD@localhost/$DB_NAME?host=/cloudsql/$CONNECTION&schema=public" |
+  printf '%s' "postgresql://$DB_USER:$DB_PASSWORD@localhost/$DB_NAME?host=/cloudsql/$CONNECTION&schema=public&connection_limit=5" |
     make_secret DATABASE_URL
   unset DB_PASSWORD
 fi

@@ -50,7 +50,7 @@ jobs:
       - name: Write .env.test
         run: |
           {
-            echo "DATABASE_URL=postgresql://$CI_DB_USER:$CI_DB_PASSWORD@127.0.0.1:5432/$CI_DB_NAME?schema=public"
+            echo "DATABASE_URL=postgresql://$CI_DB_USER:$CI_DB_PASSWORD@127.0.0.1:5432/$CI_DB_NAME?schema=public&connection_limit=5"
             echo "PORT=4100"
             echo "APP_ORIGIN=http://127.0.0.1:5190"
           } > .env.test
@@ -87,7 +87,7 @@ jobs:
       - name: Write .env.test
         run: |
           {
-            echo "DATABASE_URL=postgresql://$CI_DB_USER:$CI_DB_PASSWORD@127.0.0.1:5432/$CI_DB_NAME?schema=public"
+            echo "DATABASE_URL=postgresql://$CI_DB_USER:$CI_DB_PASSWORD@127.0.0.1:5432/$CI_DB_NAME?schema=public&connection_limit=5"
             echo "PORT=4100"
             echo "APP_ORIGIN=http://127.0.0.1:5190"
           } > .env.test
