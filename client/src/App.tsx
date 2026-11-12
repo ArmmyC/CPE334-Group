@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import type { Role } from '@cpe334-group/shared';
 import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
+import { CatalogPage } from './CatalogPage';
+import { EquipmentDetailPage } from './EquipmentDetailPage';
 import { CopiesPage } from './CopiesPage';
 import { LoginPage } from './LoginPage';
 
@@ -115,7 +117,15 @@ function Content() {
         path="/catalog"
         element={
           <RequireRole role="BORROWER">
-            <PlaceholderPage title="Equipment catalog" />
+            <CatalogPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/catalog/:typeId"
+        element={
+          <RequireRole role="BORROWER">
+            <EquipmentDetailPage />
           </RequireRole>
         }
       />

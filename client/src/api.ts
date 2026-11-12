@@ -1,12 +1,16 @@
 import {
   apiErrorSchema,
+  catalogResponseSchema,
   currentUserSchema,
   custodianCopiesResponseSchema,
   custodianCopySchema,
+  equipmentTypeDetailSchema,
   healthResponseSchema,
+  type CatalogResponse,
   type ChangeableCopyStatus,
   type CurrentUser,
   type CustodianCopy,
+  type EquipmentTypeDetail,
   type HealthResponse,
   type LoginRequest,
 } from '@cpe334-group/shared';
@@ -96,4 +100,15 @@ export async function changeCopyStatus(
     body: JSON.stringify({ status }),
   });
   return custodianCopySchema.parse(await response.json());
+}
+
+// F-02 catalog reads.
+export async function fetchCatalog(): Promise<CatalogResponse> {
+  const response = await send('/api/equipment-types', { method: 'GET' });
+  return catalogResponseSchema.parse(await response.json());
+}
+
+export async function fetchEquipmentType(id: string): Promise<EquipmentTypeDetail> {
+  const response = await send(`/api/equipment-types/${encodeURIComponent(id)}`, { method: 'GET' });
+  return equipmentTypeDetailSchema.parse(await response.json());
 }
