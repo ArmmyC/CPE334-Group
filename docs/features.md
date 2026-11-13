@@ -10,6 +10,7 @@ Issue: #2
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-04 | @ArmmyC | First inventory for teammate review: 19 features and 8 system responsibilities covering FR-01 to FR-21, BR-01 to BR-17, and NFR-01 to NFR-14. Includes fixes from an independent check against the SRS and Part B. |
 | 0.2 | 2026-11-07 | @ArmmyC | Section 3 records the contract Issues so far: #12 for SR-03 and #14 for F-01, SR-01, and SR-02. |
+| 0.3 | 2026-11-07 | @ArmmyC | Section 3 records #16 as the contract Issue for F-03. |
 
 ## How to read this inventory
 
@@ -76,12 +77,12 @@ Each Sprint 1 feature gets its own contract in `docs/sprints/sprint-1/`, committ
 | Feature | Planned contract file | Contract Issue |
 | --- | --- | --- |
 | F-01 | `docs/sprints/sprint-1/F-01-sign-in.md` | #14 |
-| F-02 | `docs/sprints/sprint-1/F-02-catalog.md` | To be created |
-| F-03 | `docs/sprints/sprint-1/F-03-borrow-requests.md` | To be created |
-| F-04 | `docs/sprints/sprint-1/F-04-checkout.md` | To be created |
+| F-02 | `docs/sprints/sprint-1/F-02-catalog.md` | #22 |
+| F-03 | `docs/sprints/sprint-1/F-03-borrow-requests.md` | #16 |
+| F-04 | `docs/sprints/sprint-1/F-04-checkout.md` | #24 |
 | F-05 | `docs/sprints/sprint-1/F-05-active-loans.md` | #18 |
-| F-06 | `docs/sprints/sprint-1/F-06-copy-status.md` | To be created |
-| F-07 | `docs/sprints/sprint-1/F-07-history-recording.md` | To be created |
+| F-06 | `docs/sprints/sprint-1/F-06-copy-status.md` | #23 |
+| F-07 | `docs/sprints/sprint-1/F-07-history-recording.md` | #21 |
 | SR-01, SR-02, SR-03, SR-04, SR-07 | `docs/sprints/sprint-1/system-checks.md` | #12 adds the file with the SR-03 section, #14 adds SR-01 and SR-02, and #19 adds SR-04 and SR-07. |
 
 `system-checks.md` holds the test specifications (preconditions, input, action, expected result) for every Sprint 1 SR acceptance criterion, AC-SR01-01 to AC-SR07-01. Each feature contract also lists the SR rules it must satisfy.

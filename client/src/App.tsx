@@ -2,23 +2,18 @@ import { useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import type { Role } from '@cpe334-group/shared';
 import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
+import { CatalogPage } from './CatalogPage';
+import { EquipmentDetailPage } from './EquipmentDetailPage';
+import { CopiesPage } from './CopiesPage';
 import { LoginPage } from './LoginPage';
+import { MyRequestsPage } from './MyRequestsPage';
+import { PendingRequestsPage } from './PendingRequestsPage';
 
 export function App() {
   return (
     <AuthProvider>
       <Shell />
     </AuthProvider>
-  );
-}
-
-// A page that a later feature replaces (F-02 catalog, F-04 pending requests).
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <section>
-      <h1 className="h3">{title}</h1>
-      <p className="text-body-secondary">This page is not built yet.</p>
-    </section>
   );
 }
 
@@ -55,8 +50,18 @@ function Header() {
           <Link className="navbar-brand" to="/">
             CPE Lab Equipment Borrowing
           </Link>
+          {state.status === 'signed-in' && state.user.role === 'CUSTODIAN' && (
+            <Link className="nav-link text-white me-auto ms-3" to="/custodian/copies">
+              Copies
+            </Link>
+          )}
           {state.status === 'signed-in' && (
             <div className="d-flex align-items-center gap-2 text-white">
+              {state.user.role === 'BORROWER' && (
+                <Link className="text-white me-2" to="/my">
+                  My requests
+                </Link>
+              )}
               <span>{state.user.name}</span>
               <span className="badge text-bg-light">{ROLE_LABEL[state.user.role]}</span>
               <button
@@ -109,7 +114,23 @@ function Content() {
         path="/catalog"
         element={
           <RequireRole role="BORROWER">
-            <PlaceholderPage title="Equipment catalog" />
+            <CatalogPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/catalog/:typeId"
+        element={
+          <RequireRole role="BORROWER">
+            <EquipmentDetailPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/my"
+        element={
+          <RequireRole role="BORROWER">
+            <MyRequestsPage />
           </RequireRole>
         }
       />
@@ -117,7 +138,15 @@ function Content() {
         path="/custodian/requests"
         element={
           <RequireRole role="CUSTODIAN">
-            <PlaceholderPage title="Pending requests" />
+            <PendingRequestsPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/copies"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <CopiesPage />
           </RequireRole>
         }
       />

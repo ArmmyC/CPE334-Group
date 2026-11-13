@@ -1,10 +1,29 @@
 import {
   apiErrorSchema,
+  availableCopyListSchema,
+  borrowRequestSchema,
+  checkoutResultSchema,
+  catalogResponseSchema,
   currentUserSchema,
+  custodianCopiesResponseSchema,
+  custodianCopySchema,
+  equipmentTypeDetailSchema,
   healthResponseSchema,
+  loanSchema,
+  pendingRequestListSchema,
+  type AvailableCopy,
+  type BorrowRequest,
+  type CheckoutResult,
+  type CreateRequest,
+  type CatalogResponse,
+  type ChangeableCopyStatus,
   type CurrentUser,
+  type CustodianCopy,
+  type EquipmentTypeDetail,
   type HealthResponse,
+  type Loan,
   type LoginRequest,
+  type PendingRequest,
 } from '@cpe334-group/shared';
 
 // An API error in the shared shape (SDS 5.3), with `fields` for validation errors.
@@ -75,4 +94,78 @@ export async function logout(): Promise<void> {
       throw error;
     }
   }
+}
+
+// The borrower's own requests, newest first (F-03).
+export async function fetchMyRequests(): Promise<BorrowRequest[]> {
+  const response = await send('/api/requests', { method: 'GET' });
+  return borrowRequestSchema.array().parse(await response.json());
+}
+
+// The borrower's own loans, newest first (F-03).
+export async function fetchMyLoans(): Promise<Loan[]> {
+  const response = await send('/api/loans', { method: 'GET' });
+  return loanSchema.array().parse(await response.json());
+}
+
+export async function submitRequest(input: CreateRequest): Promise<BorrowRequest> {
+  const response = await send('/api/requests', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return borrowRequestSchema.parse(await response.json());
+}
+
+export async function cancelRequest(id: number): Promise<BorrowRequest> {
+  const response = await send(`/api/requests/${id}/cancel`, { method: 'POST' });
+  return borrowRequestSchema.parse(await response.json());
+}
+
+// The Pending requests in the custodian's labs, oldest first (F-04).
+export async function fetchPendingRequests(): Promise<PendingRequest[]> {
+  const response = await send('/api/custodian/requests?status=PENDING', { method: 'GET' });
+  return pendingRequestListSchema.parse(await response.json()).items;
+}
+
+export async function fetchAvailableCopies(requestId: number): Promise<AvailableCopy[]> {
+  const response = await send(`/api/custodian/requests/${requestId}/available-copies`, {
+    method: 'GET',
+  });
+  return availableCopyListSchema.parse(await response.json()).items;
+}
+
+export async function checkoutCopy(requestId: number, copyId: number): Promise<CheckoutResult> {
+  const response = await send(`/api/custodian/requests/${requestId}/checkout`, {
+    method: 'POST',
+    body: JSON.stringify({ copyId }),
+  });
+  return checkoutResultSchema.parse(await response.json());
+}
+
+// F-06 copy maintenance status (SDS 5.2).
+export async function fetchCustodianCopies(): Promise<CustodianCopy[]> {
+  const response = await send('/api/custodian/copies', { method: 'GET' });
+  return custodianCopiesResponseSchema.parse(await response.json()).items;
+}
+
+export async function changeCopyStatus(
+  copyId: number,
+  status: ChangeableCopyStatus,
+): Promise<CustodianCopy> {
+  const response = await send(`/api/custodian/copies/${copyId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  return custodianCopySchema.parse(await response.json());
+}
+
+// F-02 catalog reads.
+export async function fetchCatalog(): Promise<CatalogResponse> {
+  const response = await send('/api/equipment-types', { method: 'GET' });
+  return catalogResponseSchema.parse(await response.json());
+}
+
+export async function fetchEquipmentType(id: string): Promise<EquipmentTypeDetail> {
+  const response = await send(`/api/equipment-types/${encodeURIComponent(id)}`, { method: 'GET' });
+  return equipmentTypeDetailSchema.parse(await response.json());
 }
