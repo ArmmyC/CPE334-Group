@@ -7,6 +7,7 @@ import {
   currentUserSchema,
   custodianCopiesResponseSchema,
   custodianCopySchema,
+  custodianLoansResponseSchema,
   equipmentTypeDetailSchema,
   healthResponseSchema,
   loanSchema,
@@ -19,6 +20,7 @@ import {
   type ChangeableCopyStatus,
   type CurrentUser,
   type CustodianCopy,
+  type CustodianLoan,
   type EquipmentTypeDetail,
   type HealthResponse,
   type Loan,
@@ -157,6 +159,12 @@ export async function changeCopyStatus(
     body: JSON.stringify({ status }),
   });
   return custodianCopySchema.parse(await response.json());
+}
+
+// F-05 active loans in the custodian's labs, earliest due date first (SDS 5.2).
+export async function fetchActiveLoans(): Promise<CustodianLoan[]> {
+  const response = await send('/api/custodian/loans', { method: 'GET' });
+  return custodianLoansResponseSchema.parse(await response.json()).items;
 }
 
 // F-02 catalog reads.

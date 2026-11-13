@@ -107,6 +107,7 @@ describe('TEST-F05-01 active loans page (AC-F05-01, FR-14)', () => {
     renderApp('/custodian/loans');
 
     expect(await screen.findByRole('heading', { name: 'Active loans' })).toBeInTheDocument();
+    await screen.findByText('EMB-LA-0002');
     for (const header of ['Borrower', 'Equipment', 'Lab', 'Asset tag', 'Checked out', 'Due date']) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }

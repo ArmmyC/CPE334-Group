@@ -65,6 +65,12 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
     { method: 'get', path: '/api/loans', access: 'BORROWER', handler: loans.list },
     {
       method: 'get',
+      path: '/api/custodian/loans',
+      access: 'CUSTODIAN',
+      handler: loans.listForCustodian,
+    },
+    {
+      method: 'get',
       path: '/api/custodian/requests',
       access: 'CUSTODIAN',
       handler: checkout.listPending,
