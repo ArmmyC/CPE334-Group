@@ -13,6 +13,7 @@ Sources: [SRS](../../srs.md) section 3 (FR-14), [System-Level SDS](../../system-
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-07 | @ArmmyC | First contract, written before the tests (#18). |
 | 0.2 | 2026-11-07 | @ArmmyC | Review fixes on #20: unknown query parameters return 400, and the SDS 5.1 source is cited. |
+| 0.3 | 2026-11-13 | @ArmmyC | The success body is `{ "items": [...] }`, as SDS 5 requires for list endpoints. F-04 is merged, so the checkout path can seed the loans in the E2E journey. |
 
 ## 1. Feature-Level SDS
 
@@ -50,9 +51,9 @@ No migration. The feature reads `loan`, `copy`, `equipment_type`, `lab`, `lab_as
 
 | Method and path | Access | Request | Success | Errors |
 | --- | --- | --- | --- | --- |
-| `GET /api/custodian/loans` | Custodian | Optional query `status`. Only `ACTIVE` is allowed in Sprint 1, and it is the default. | 200 with the active loans in the custodian's labs, sorted by `dueDate` ascending, then `checkedOutAt` ascending, then `id` | 400 `VALIDATION_ERROR` with `fields.status` for another value, 400 `VALIDATION_ERROR` for an unknown query parameter, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower |
+| `GET /api/custodian/loans` | Custodian | Optional query `status`. Only `ACTIVE` is allowed in Sprint 1, and it is the default. | 200 with `{ "items": [...] }`, the active loans in the custodian's labs, sorted by `dueDate` ascending, then `checkedOutAt` ascending, then `id` | 400 `VALIDATION_ERROR` with `fields.status` for another value, 400 `VALIDATION_ERROR` for an unknown query parameter, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` for a borrower |
 
-Response shape, defined in `shared/src/loans.ts`:
+Each item has this shape, defined in `shared/src/loans.ts`:
 
 `{ id, borrower: { id, name }, equipmentType: { id, name }, lab: { id, name }, assetTag, checkedOutAt, dueDate, status }`
 
