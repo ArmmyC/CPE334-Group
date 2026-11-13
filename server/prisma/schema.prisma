@@ -1,0 +1,192 @@
+// Sprint 1 data model from the System-Level SDS, section 3.2.
+// Constraints Prisma cannot express (partial unique indexes and checks) are SQL in the migration.
+// Timestamps have no database default. Services write them from the injected clock (SDS section 8).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BORROWER
+  CUSTODIAN
+}
+
+enum CopyStatus {
+  AVAILABLE
+  ON_LOAN
+  IN_MAINTENANCE
+  RETIRED
+}
+
+enum RequestStatus {
+  PENDING
+  FULFILLED
+  REJECTED
+  CANCELLED
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+}
+
+enum HistoryEntityType {
+  REQUEST
+  LOAN
+  COPY
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  // Stored lower-case, enforced by a check constraint in the migration.
+  email        String   @unique
+  name         String
+  role         Role
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @map("created_at") @db.Timestamptz(3)
+
+  sessions        Session[]
+  labAssignments  LabAssignment[]
+  requests        BorrowRequest[] @relation("RequestBorrower")
+  decidedRequests BorrowRequest[] @relation("RequestDecidedBy")
+  loans           Loan[]          @relation("LoanBorrower")
+  checkedOutLoans Loan[]          @relation("LoanCheckedOutBy")
+  historyEntries  StatusHistory[]
+
+  @@map("user")
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  tokenHash  String   @unique @map("token_hash")
+  createdAt  DateTime @map("created_at") @db.Timestamptz(3)
+  lastUsedAt DateTime @map("last_used_at") @db.Timestamptz(3)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Lab {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  assignments    LabAssignment[]
+  equipmentTypes EquipmentType[]
+  historyEntries StatusHistory[]
+
+  @@map("lab")
+}
+
+model LabAssignment {
+  labId       Int @map("lab_id")
+  custodianId Int @map("custodian_id")
+
+  lab       Lab  @relation(fields: [labId], references: [id], onDelete: Restrict)
+  custodian User @relation(fields: [custodianId], references: [id], onDelete: Restrict)
+
+  @@id([labId, custodianId])
+  @@index([custodianId])
+  @@map("lab_assignment")
+}
+
+model EquipmentType {
+  id             Int    @id @default(autoincrement())
+  labId          Int    @map("lab_id")
+  name           String
+  category       String
+  description    String
+  // BR-05: 1 to 30 days, enforced by a check constraint in the migration.
+  loanPeriodDays Int    @default(7) @map("loan_period_days")
+
+  lab      Lab             @relation(fields: [labId], references: [id], onDelete: Restrict)
+  copies   Copy[]
+  requests BorrowRequest[]
+
+  @@unique([labId, name])
+  @@map("equipment_type")
+}
+
+model Copy {
+  id              Int        @id @default(autoincrement())
+  equipmentTypeId Int        @map("equipment_type_id")
+  // BR-12: unique asset tags.
+  assetTag        String     @unique @map("asset_tag")
+  status          CopyStatus
+
+  equipmentType EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
+  loans         Loan[]
+
+  @@index([equipmentTypeId, status])
+  @@map("copy")
+}
+
+model BorrowRequest {
+  id              Int           @id @default(autoincrement())
+  borrowerId      Int           @map("borrower_id")
+  equipmentTypeId Int           @map("equipment_type_id")
+  purpose         String?       @db.VarChar(500)
+  status          RequestStatus
+  createdAt       DateTime      @map("created_at") @db.Timestamptz(3)
+  decidedAt       DateTime?     @map("decided_at") @db.Timestamptz(3)
+  decidedById     Int?          @map("decided_by_id")
+
+  borrower      User          @relation("RequestBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+  equipmentType EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
+  decidedBy     User?         @relation("RequestDecidedBy", fields: [decidedById], references: [id], onDelete: Restrict)
+  loan          Loan?
+
+  // BR-04: one Pending request per borrower and type is a partial unique index in the migration.
+  @@index([borrowerId, status])
+  @@index([equipmentTypeId, status, createdAt])
+  @@map("borrow_request")
+}
+
+model Loan {
+  id             Int        @id @default(autoincrement())
+  requestId      Int        @unique @map("request_id")
+  copyId         Int        @map("copy_id")
+  borrowerId     Int        @map("borrower_id")
+  checkedOutAt   DateTime   @map("checked_out_at") @db.Timestamptz(3)
+  checkedOutById Int        @map("checked_out_by_id")
+  // A calendar date in Asia/Bangkok, not a timestamp (SDS section 8).
+  dueDate        DateTime   @map("due_date") @db.Date
+  status         LoanStatus
+
+  request      BorrowRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  copy         Copy          @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  borrower     User          @relation("LoanBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+  checkedOutBy User          @relation("LoanCheckedOutBy", fields: [checkedOutById], references: [id], onDelete: Restrict)
+
+  // BR-01: one active loan per copy is a partial unique index in the migration.
+  @@index([copyId])
+  @@index([borrowerId, status])
+  @@map("loan")
+}
+
+model StatusHistory {
+  id         Int               @id @default(autoincrement())
+  entityType HistoryEntityType @map("entity_type")
+  entityId   Int               @map("entity_id")
+  labId      Int               @map("lab_id")
+  // Null when the record is created.
+  oldStatus  String?           @map("old_status")
+  newStatus  String            @map("new_status")
+  actorId    Int               @map("actor_id")
+  createdAt  DateTime          @map("created_at") @db.Timestamptz(3)
+
+  lab   Lab  @relation(fields: [labId], references: [id], onDelete: Restrict)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([labId, createdAt])
+  @@map("status_history")
+}

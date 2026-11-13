@@ -1,0 +1,52 @@
+{
+  "name": "cpe334-group",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CPE334 group project: Lab Equipment Borrowing System",
+  "type": "module",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "prepare": "npm run build --workspace shared && npm run prisma:generate --workspace server",
+    "dev": "npm run build --workspace shared && run-p dev:shared dev:server dev:client",
+    "dev:shared": "npm run dev --workspace shared",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "build": "npm run build --workspace shared && npm run build --workspace server && npm run build --workspace client",
+    "test": "npm run test --workspace shared && npm run test --workspace server && npm run test --workspace client",
+    "test:coverage": "npm run test:coverage --workspace server && npm run test:coverage --workspace client",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d --wait db",
+    "db:migrate": "dotenv -e .env -- npm run db:migrate --workspace server",
+    "db:deploy": "dotenv -e .env -- npm run db:deploy --workspace server",
+    "db:seed": "npm run db:seed --workspace server",
+    "db:setup": "npm run db:up && npm run db:deploy && npm run db:seed",
+    "db:test:up": "docker compose --env-file .env.test up -d --wait db-test",
+    "db:down": "docker compose down",
+    "e2e:seed": "dotenv -o -e .env.test -- npm run e2e:seed --workspace server",
+    "e2e:server": "dotenv -e .env.test -- npm run start:e2e --workspace server",
+    "e2e:client": "npm run dev --workspace client -- --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@playwright/test": "^1.62.1",
+    "dotenv-cli": "^8.0.0",
+    "eslint": "^9.35.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.3.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0"
+  }
+}
