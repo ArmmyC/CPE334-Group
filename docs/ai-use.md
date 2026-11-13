@@ -45,11 +45,11 @@ The prompts below are copied from the session transcripts. They are short becaus
 
 | Date | Tool | Task assisted | Checked by |
 | --- | --- | --- | --- |
-| 2026-11-06 to 2026-11-09 | Claude Code | Sprint 1 feature work for F-07 (#25), F-02 (#26), F-06 (#27), and F-04 (#28): contract, tests, then code. (confirm) | ArmmyC reviewed each pull request. Lint, format, build, and tests pass. |
-| 2026-11-10 to 2026-11-13 | Claude Code | Lab 5 setup: CI gate and Docker image with `/api/ready` (#29), GCP resource and CI identity scripts (#30), and the deploy workflow, smoke test, and `deployment.md` (#31). | ArmmyC reviewed each pull request and asked for changes. Each point was fixed and re-reviewed before approval. |
+| 2026-11-07 to 2026-11-13 | Claude Code | Sprint 1 feature work for F-07 (#25), F-02 (#26), F-06 (#27), and F-04 (#28): contract, tests, then code. | ArmmyC reviewed each pull request. Lint, format, build, and tests pass. |
+| 2026-11-10 to 2026-11-13 | Claude Code | Lab 5 setup: CI gate and Docker image with `/api/ready` (#29), GCP resource and CI identity scripts (#30), and the deploy workflow, smoke test, and `deployment.md` (#31). | ArmmyC reviewed each pull request and asked for changes. #30 and #31 were fixed, re-reviewed, and approved. #29 is waiting for its retarget to `sprint-2`, so ArmmyC's changes-requested review stays until then. |
 | 2026-11-12 to 2026-11-13 | Claude Code | Fixing ArmmyC's review points on #29 to #31, such as the tighter Workload Identity condition, the clean-folder check in the manual deploy script, keeping the smoke password out of command arguments, and the release procedure and rollback text. | ArmmyC re-read the changes and approved #30 and #31. |
 | 2026-11-13 | Claude Code | Resolving merge conflicts on #28 and #29 after other pull requests merged into `sprint-1`. | `git diff` against the staging branch was empty for #28, and CI and local tests passed after the merge. |
-| 2026-11-13 | Claude Code | Reviewing ArmmyC's pull requests #17, #37, #38, and #39 against the contracts, with a local run of the tests and Playwright on each head. | Reviews were left as pending, read, and then submitted by Bank848. |
+| 2026-11-08 to 2026-11-13 | Claude Code | Reviewing ArmmyC's pull requests #17, #37, #38, and #39 against the contracts, with a local run of the tests and Playwright on each head. | Reviews were left as pending, read, and then submitted by Bank848. |
 | 2026-11-13 | Claude Code | Reading the Google Cloud billing report, stopping the Cloud SQL instance when it was idle, and lowering the budget alert to 200 baht. | Bank848 asked for each step and checked the result in the Google Cloud console. |
 
 ### Representative prompts
@@ -69,5 +69,5 @@ The prompts below are copied from the session transcripts. They are short becaus
   - A formatter run joined the line continuations in `infra/gcp/02-ci-identity.sh`. ArmmyC noticed, and the line breaks were restored and the other `infra/` files checked.
   - The first release procedure in `deployment.md` went straight from a pull request to `main`. ArmmyC pointed out that the plan uses a staging branch, a release pull request, and a version tag, and the text was rewritten.
   - The first cost figures in `deployment.md` had no source. ArmmyC asked for one, and the text now names the billing report and the date it was read.
-- **Process mistakes.** #28 was merged by ArmmyC before the retarget fixes were pushed, so the follow-up #38 was needed. Two earlier pull requests (#25 and #26) were merged by their author.
+- **Process mistakes.** #28 was merged by ArmmyC five minutes before the fixes for three review points were pushed: the catalog count test, the E2E request form, and the contract notes. They were fixed afterwards in the follow-up #38. Two earlier pull requests (#25 and #26) were merged by their author.
 - **Rules kept outside the model.** Nobody merges their own pull request. Changes to billable cloud resources and to review submissions are done only after Bank848 asks for them, and secrets stay in files outside the repository.
