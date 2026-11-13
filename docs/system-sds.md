@@ -419,7 +419,7 @@ flowchart LR
 | Pipeline | CI runs on every pull request into the sprint staging branch and `main`, and a failing check blocks the merge (NFR-11). A merge into `main` starts the deploy workflow, which waits for a manual approval on the `demo` environment, then builds, pushes, migrates, deploys by image digest, and runs a read-only smoke test. |
 | Smoke test | Read-only checks after each deploy: `GET /api/health`, `GET /api/ready`, `GET /` (the SPA), then a login as a dedicated smoke borrower (`SMOKE_EMAIL`, `SMOKE_PASSWORD`), `GET /api/equipment-types`, and logout. It never uses a custodian account and changes no business data. Login adds a `session` row that logout deletes, and from Sprint 2 a `login_attempt` row. These rows are expected. |
 | Release identity | The image tag is the full commit SHA, and the run summary records the tag, digest, and URL, so the running revision maps to one commit. |
-| Rollback | Redeploy an earlier image tag through the same workflow. Migrations are additive, so an older image still works. |
+| Rollback | Redeploy the image of an earlier release with a manual `gcloud run deploy` command (in `docs/labs/lab-05/deployment.md`), which also sets the `git-sha` label. `deploy.yml` runs only on a push to `main`, so it is not used for a rollback. Migrations are additive, so an older image still works. |
 | Durability | All state, sessions included, is in Cloud SQL. Nothing is written to the container disk (NFR-10). |
 | Cost | A budget alert before any resource, Cloud SQL paused when idle, and teardown after grading. |
 

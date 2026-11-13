@@ -130,7 +130,9 @@ GitHub sign-in is limited to this repository (by name and by ID), the `main` bra
 
 ## Cost and teardown
 
-A budget alert is set on the billing account before any resource exists (฿200 a month, alerts at ฿100, ฿180, and ฿200). It only sends an email and does not stop anything. Cloud SQL is the one resource that costs real money, about ฿14 to ฿15 a day while it runs, even with no traffic. Cloud Run (minimum 0 instances), Artifact Registry, and Secret Manager cost almost nothing at this size.
+A budget alert is set on the billing account before any resource exists (฿200 a month, alerts at ฿100, ฿180, and ฿200). It only sends an email and does not stop anything. Cloud SQL is the one resource that costs real money, even with no traffic. The figure comes from the Cloud Billing Reports page, read on 13 November 2026: ฿70.70 for Cloud SQL from 8 to 12 November, about ฿14 a day. Cloud Run (minimum 0 instances), Artifact Registry, and Secret Manager showed ฿0.00 or no line.
+
+At that rate a Cloud SQL instance left running passes ฿100 in about a week and ฿200 in about two weeks, so the alerts are expected to fire unless the instance is stopped. They are a reminder to stop it, not a sign that something is wrong.
 
 After the course ends, delete the Cloud SQL instance, the Cloud Run service and job, the Artifact Registry repository, and the project.
 
