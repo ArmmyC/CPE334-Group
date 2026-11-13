@@ -1,6 +1,6 @@
 # AI-Use Declaration
 
-This file lists the AI use in the Lab Equipment Borrowing System project, for the Sprint 1 release (`v0.1.0`). ArmmyC wrote the sections for ArmmyC. The sections for Bank848 are his to add, because only he knows how he used AI.
+This file lists the AI use in the Lab Equipment Borrowing System project, for the Sprint 1 release (`v0.1.0`). ArmmyC wrote the section for ArmmyC, and Bank848 wrote the section for Bank848.
 
 The prompts below are copied from the session transcripts. They are short because most of the work was done by repeating a short instruction inside a longer session, with the plan, the contracts, and the review rules already in context.
 
@@ -43,4 +43,31 @@ The prompts below are copied from the session transcripts. They are short becaus
 
 ## Bank848
 
-To be added by Bank848.
+| Date | Tool | Task assisted | Checked by |
+| --- | --- | --- | --- |
+| 2026-11-06 to 2026-11-09 | Claude Code | Sprint 1 feature work for F-07 (#25), F-02 (#26), F-06 (#27), and F-04 (#28): contract, tests, then code. (confirm) | ArmmyC reviewed each pull request. Lint, format, build, and tests pass. |
+| 2026-11-10 to 2026-11-13 | Claude Code | Lab 5 setup: CI gate and Docker image with `/api/ready` (#29), GCP resource and CI identity scripts (#30), and the deploy workflow, smoke test, and `deployment.md` (#31). | ArmmyC reviewed each pull request and asked for changes. Each point was fixed and re-reviewed before approval. |
+| 2026-11-12 to 2026-11-13 | Claude Code | Fixing ArmmyC's review points on #29 to #31, such as the tighter Workload Identity condition, the clean-folder check in the manual deploy script, keeping the smoke password out of command arguments, and the release procedure and rollback text. | ArmmyC re-read the changes and approved #30 and #31. |
+| 2026-11-13 | Claude Code | Resolving merge conflicts on #28 and #29 after other pull requests merged into `sprint-1`. | `git diff` against the staging branch was empty for #28, and CI and local tests passed after the merge. |
+| 2026-11-13 | Claude Code | Reviewing ArmmyC's pull requests #17, #37, #38, and #39 against the contracts, with a local run of the tests and Playwright on each head. | Reviews were left as pending, read, and then submitted by Bank848. |
+| 2026-11-13 | Claude Code | Reading the Google Cloud billing report, stopping the Cloud SQL instance when it was idle, and lowering the budget alert to 200 baht. | Bank848 asked for each step and checked the result in the Google Cloud console. |
+
+### Representative prompts
+
+| Date | Prompt | What it produced |
+| --- | --- | --- |
+| 2026-11-13 | "ไล่แก้จาก draft เป็น ready และก็ดูว่า pr ที่เปิดอยู่ทั้งหมดมี conflict ไหม" (mark the drafts ready and check every open pull request for conflicts) | #30 and #31 marked ready, and a conflict check on every open pull request. |
+| 2026-11-13 | "แก้เลย แล้วเขียน deployment.md ด้วย" (fix it, and write deployment.md too) | The fixes for ArmmyC's points and `docs/labs/lab-05/deployment.md`. |
+| 2026-11-13 | "รีวิว #17 เลย", then "ส่งรีวิวแบบ approve" (review #17, then submit it as approve) | A pending review with findings, then the approval after Bank848 read it. |
+| 2026-11-13 | "รีวิว #37 กับ #38 เลย" (review #37 and #38) | Two pending reviews, each backed by a local test run, then submitted as approvals. |
+| 2026-11-13 | "ประหยัดตังกันหน่อย" (let's save some money) | The stop and start steps for Cloud SQL, now in `deployment.md`. |
+
+### How the output was checked and corrected
+
+- **Tests run before approval.** For each pull request reviewed, the server, client, and Playwright tests were run locally against a real PostgreSQL database, not only read in CI. The reviewer also traced the claimed behaviour through the code.
+- **Wrong output that was caught.**
+  - A formatter run joined the line continuations in `infra/gcp/02-ci-identity.sh`. ArmmyC noticed, and the line breaks were restored and the other `infra/` files checked.
+  - The first release procedure in `deployment.md` went straight from a pull request to `main`. ArmmyC pointed out that the plan uses a staging branch, a release pull request, and a version tag, and the text was rewritten.
+  - The first cost figures in `deployment.md` had no source. ArmmyC asked for one, and the text now names the billing report and the date it was read.
+- **Process mistakes.** #28 was merged by ArmmyC before the retarget fixes were pushed, so the follow-up #38 was needed. Two earlier pull requests (#25 and #26) were merged by their author.
+- **Rules kept outside the model.** Nobody merges their own pull request. Changes to billable cloud resources and to review submissions are done only after Bank848 asks for them, and secrets stay in files outside the repository.
