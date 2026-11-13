@@ -2,6 +2,8 @@ import type { RequestHandler } from 'express';
 import type { Role } from '@cpe334-group/shared';
 import { authHandlers } from './auth/routes.js';
 import { createSessionService } from './auth/sessions.js';
+import { copyHandlers } from './copies/routes.js';
+import { createCopyService } from './copies/service.js';
 import { catalogHandlers } from './catalog/routes.js';
 import { createCatalogService } from './catalog/service.js';
 import type { AppDependencies } from './dependencies.js';
@@ -26,6 +28,7 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
     secureCookies: deps.secureCookies ?? false,
   });
 
+  const copies = copyHandlers({ copies: createCopyService(deps) });
   const catalog = catalogHandlers({ catalog: createCatalogService(deps) });
 
   return [
@@ -38,6 +41,13 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
     { method: 'post', path: '/api/auth/login', access: 'public', handler: auth.login },
     { method: 'post', path: '/api/auth/logout', access: 'signed-in', handler: auth.logout },
     { method: 'get', path: '/api/auth/me', access: 'signed-in', handler: auth.me },
+    { method: 'get', path: '/api/custodian/copies', access: 'CUSTODIAN', handler: copies.list },
+    {
+      method: 'patch',
+      path: '/api/custodian/copies/:id',
+      access: 'CUSTODIAN',
+      handler: copies.changeStatus,
+    },
     { method: 'get', path: '/api/equipment-types', access: 'BORROWER', handler: catalog.list },
     {
       method: 'get',
