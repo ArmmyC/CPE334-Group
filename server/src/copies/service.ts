@@ -1,4 +1,4 @@
-import type { CopyStatus, Prisma, PrismaClient } from '@prisma/client';
+import type { CopyStatus, Prisma, PrismaClient } from '../generated/prisma/client.js';
 import type { ChangeableCopyStatus, CustodianCopy } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';

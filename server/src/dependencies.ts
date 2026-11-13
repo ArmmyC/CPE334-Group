@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from './generated/prisma/client.js';
 import type { Clock } from './clock.js';
 
 // Everything the app takes from outside, so tests can pass a fixed clock or another database.

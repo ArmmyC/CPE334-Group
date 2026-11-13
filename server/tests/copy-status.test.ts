@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import type { CopyStatus } from '@prisma/client';
+import type { CopyStatus } from '../src/generated/prisma/client.js';
 import { apiErrorSchema } from '@cpe334-group/shared';
 import { prisma } from '../src/db.js';
 import { buildRoutes } from '../src/routes.js';

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../generated/prisma/client.js';
 import type { CustodianLoan, Loan } from '@cpe334-group/shared';
 
 // Loan reads: the borrower's own loans (F-03) and the custodian's active loans (F-05). F-04 is

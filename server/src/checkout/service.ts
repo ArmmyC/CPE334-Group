@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import type { AvailableCopy, CheckoutResult, PendingRequest } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';

@@ -1,4 +1,4 @@
-import type { CopyStatus, PrismaClient, Role } from '@prisma/client';
+import type { CopyStatus, PrismaClient, Role } from './generated/prisma/client.js';
 import { hashPassword } from './auth/password.js';
 import { createCheckoutService } from './checkout/service.js';
 import { HttpError } from './http/errors.js';

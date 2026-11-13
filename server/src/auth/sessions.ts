@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { PrismaClient, User } from '@prisma/client';
+import type { PrismaClient, User } from '../generated/prisma/client.js';
 import type { CurrentUser } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';

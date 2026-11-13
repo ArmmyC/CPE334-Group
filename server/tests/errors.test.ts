@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../src/generated/prisma/client.js';
 import request from 'supertest';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { apiErrorSchema } from '@cpe334-group/shared';

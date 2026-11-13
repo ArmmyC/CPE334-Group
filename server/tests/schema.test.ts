@@ -27,9 +27,14 @@ describe('TEST-SR03-01 unique asset tags (AC-SR03-01, BR-12)', () => {
     const otherType = await createEquipmentType();
     await createCopy(type.id, 'EMB-0001');
 
+    // With the Prisma 7 pg adapter, `meta.target` is gone. The constraint name is in the driver error.
     const assetTagViolation = {
       code: 'P2002',
-      meta: { target: expect.arrayContaining(['asset_tag']) },
+      meta: {
+        driverAdapterError: {
+          cause: { constraint: { index: 'copy_asset_tag_key' } },
+        },
+      },
     };
     await expect(createCopy(type.id, 'EMB-0001')).rejects.toMatchObject(assetTagViolation);
     await expect(createCopy(otherType.id, 'EMB-0001')).rejects.toMatchObject(assetTagViolation);

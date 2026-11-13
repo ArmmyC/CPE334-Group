@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../generated/prisma/client.js';
 import type { CatalogResponse, EquipmentTypeDetail } from '@cpe334-group/shared';
 
 // Reads for F-02. Only catalog columns are selected, and the count of Available copies is

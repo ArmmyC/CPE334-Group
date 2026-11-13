@@ -1,4 +1,4 @@
-import type { CopyStatus, LoanStatus, Prisma, RequestStatus } from '@prisma/client';
+import type { CopyStatus, LoanStatus, Prisma, RequestStatus } from '../generated/prisma/client.js';
 import type { Clock } from '../clock.js';
 
 // One status change of a request, a loan, or a copy. `oldStatus` is null when the record is

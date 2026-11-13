@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { apiErrorSchema } from '@cpe334-group/shared';
-import type { CopyStatus } from '@prisma/client';
+import type { CopyStatus } from '../src/generated/prisma/client.js';
 import { prisma } from '../src/db.js';
 import { resetDatabase } from './helpers/database.js';
 import { createAccount, createTestApp, logIn, sessionCookie } from './helpers/app.js';
