@@ -46,7 +46,7 @@ recordStatusChange(
 | `LOAN` | `loan.id` | `ACTIVE`, `RETURNED`, or `null` | `ACTIVE` or `RETURNED` |
 | `COPY` | `copy.id` | `AVAILABLE`, `ON_LOAN`, `IN_MAINTENANCE`, `RETIRED`, or `null` | the same four values |
 
-Every shape also carries `actorId`, the `user.id` of the person who made the change, taken from the session. `oldStatus` is `null` when the record is created (SDS 3.3).
+Every shape also carries `actorId`, the `user.id` of the person who made the change, taken from the session. `oldStatus` is `null` when the record is created (SDS 3.2).
 
 ### 1.4 Rules
 
@@ -111,6 +111,8 @@ These are the AC from [traceability.md](../../traceability.md) section 4, unchan
 | --- | --- | --- |
 | AC-F07-01 | FR-17 | Each request, loan, and copy status change in F-03, F-04, and F-06 stores one history entry with actor, old status, new status, and time. |
 | AC-F07-02 | FR-17 | A refused change stores no history entry. |
+
+TEST-F07-01 covers the recorder function itself. The callers finish AC-F07-01 in their own PRs: F-06 in TEST-F06-01 (#27), F-04 in TEST-F04-02 (#28), and F-03 submit and cancel in `server/tests/requests-history.test.ts` (#28, until F-03 is merged).
 
 ## 5. Test specifications
 

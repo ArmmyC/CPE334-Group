@@ -13,6 +13,7 @@ type AuthContextValue = {
   signIn: (user: CurrentUser) => void;
   signOut: () => Promise<void>;
   retry: () => void;
+  recheck: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -59,8 +60,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAttempt((count) => count + 1);
   }, []);
 
+  // Asks the server again after a page got a 401, without the "Loading..." state, so the page
+  // that asked stays mounted. Only a clear "no session" answer signs the user out.
+  const recheck = useCallback(() => {
+    fetchCurrentUser().then(
+      (user) => {
+        if (!user) setState({ status: 'signed-out' });
+      },
+      () => {},
+    );
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ state, signIn, signOut, retry }}>
+    <AuthContext.Provider value={{ state, signIn, signOut, retry, recheck }}>
       {children}
     </AuthContext.Provider>
   );

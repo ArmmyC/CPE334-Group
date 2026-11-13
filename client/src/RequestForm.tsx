@@ -11,9 +11,9 @@ function firstMessages(issues: { path: PropertyKey[]; message: string }[]): Reco
   return fields;
 }
 
-// The borrow request form (F-03). F-02's equipment detail page places it, so it is exported
-// and not yet on a route. It checks the shared schema before it sends anything, then shows
-// the API's field messages next to the fields and its rule message above the form.
+// The borrow request form (F-03), placed on F-02's equipment detail page. It checks the shared
+// schema before it sends anything, then shows the API's field messages next to the fields and
+// its rule message above the form.
 export function RequestForm({ equipmentTypeId }: { equipmentTypeId: number }) {
   const [purpose, setPurpose] = useState('');
   const [fields, setFields] = useState<Record<string, string>>({});

@@ -283,8 +283,14 @@ describe('F-07 supporting checks', () => {
 
     const rows = await prisma.statusHistory.findMany();
     expect(rows).toHaveLength(3);
-    expect(new Set(rows.map((row) => row.labId))).toEqual(new Set([second.lab.id]));
+    const labOf = (entityType: string, entityId: number) =>
+      rows.find((row) => row.entityType === entityType && row.entityId === entityId)?.labId;
+    expect(labOf('REQUEST', second.pending.id)).toBe(second.lab.id);
+    expect(labOf('LOAN', second.loan.id)).toBe(second.lab.id);
+    expect(labOf('COPY', second.copy.id)).toBe(second.lab.id);
     expect(second.lab.id).not.toBe(first.lab.id);
+    // The first setUp's records were never recorded, so none of them can be in the rows.
+    expect(rows.some((row) => row.labId === first.lab.id)).toBe(false);
   });
 
   it('throws for a record that does not exist and rolls the transaction back', async () => {
