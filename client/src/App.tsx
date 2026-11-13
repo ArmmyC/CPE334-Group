@@ -2,6 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import type { Role } from '@cpe334-group/shared';
 import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
+import { CatalogPage } from './CatalogPage';
+import { EquipmentDetailPage } from './EquipmentDetailPage';
+import { CopiesPage } from './CopiesPage';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
 
@@ -56,6 +59,11 @@ function Header() {
           <Link className="navbar-brand" to="/">
             CPE Lab Equipment Borrowing
           </Link>
+          {state.status === 'signed-in' && state.user.role === 'CUSTODIAN' && (
+            <Link className="nav-link text-white me-auto ms-3" to="/custodian/copies">
+              Copies
+            </Link>
+          )}
           {state.status === 'signed-in' && (
             <div className="d-flex align-items-center gap-2 text-white">
               {state.user.role === 'BORROWER' && (
@@ -115,7 +123,15 @@ function Content() {
         path="/catalog"
         element={
           <RequireRole role="BORROWER">
-            <PlaceholderPage title="Equipment catalog" />
+            <CatalogPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/catalog/:typeId"
+        element={
+          <RequireRole role="BORROWER">
+            <EquipmentDetailPage />
           </RequireRole>
         }
       />
@@ -132,6 +148,14 @@ function Content() {
         element={
           <RequireRole role="CUSTODIAN">
             <PlaceholderPage title="Pending requests" />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/copies"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <CopiesPage />
           </RequireRole>
         }
       />

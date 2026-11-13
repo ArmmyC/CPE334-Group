@@ -2,6 +2,10 @@ import type { RequestHandler } from 'express';
 import type { Role } from '@cpe334-group/shared';
 import { authHandlers } from './auth/routes.js';
 import { createSessionService } from './auth/sessions.js';
+import { copyHandlers } from './copies/routes.js';
+import { createCopyService } from './copies/service.js';
+import { catalogHandlers } from './catalog/routes.js';
+import { createCatalogService } from './catalog/service.js';
 import type { AppDependencies } from './dependencies.js';
 import { healthHandler } from './health.js';
 import { loanHandlers } from './loans/routes.js';
@@ -32,6 +36,9 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
   });
   const loans = loanHandlers({ loans: createLoanService({ prisma: deps.prisma }) });
 
+  const copies = copyHandlers({ copies: createCopyService(deps) });
+  const catalog = catalogHandlers({ catalog: createCatalogService(deps) });
+
   return [
     {
       method: 'get',
@@ -51,5 +58,19 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       handler: requests.cancel,
     },
     { method: 'get', path: '/api/loans', access: 'BORROWER', handler: loans.list },
+    { method: 'get', path: '/api/custodian/copies', access: 'CUSTODIAN', handler: copies.list },
+    {
+      method: 'patch',
+      path: '/api/custodian/copies/:id',
+      access: 'CUSTODIAN',
+      handler: copies.changeStatus,
+    },
+    { method: 'get', path: '/api/equipment-types', access: 'BORROWER', handler: catalog.list },
+    {
+      method: 'get',
+      path: '/api/equipment-types/:id',
+      access: 'BORROWER',
+      handler: catalog.detail,
+    },
   ];
 }

@@ -77,12 +77,12 @@ Each Sprint 1 feature gets its own contract in `docs/sprints/sprint-1/`, committ
 | Feature | Planned contract file | Contract Issue |
 | --- | --- | --- |
 | F-01 | `docs/sprints/sprint-1/F-01-sign-in.md` | #14 |
-| F-02 | `docs/sprints/sprint-1/F-02-catalog.md` | To be created |
+| F-02 | `docs/sprints/sprint-1/F-02-catalog.md` | #22 |
 | F-03 | `docs/sprints/sprint-1/F-03-borrow-requests.md` | #16 |
 | F-04 | `docs/sprints/sprint-1/F-04-checkout.md` | To be created |
 | F-05 | `docs/sprints/sprint-1/F-05-active-loans.md` | #18 |
-| F-06 | `docs/sprints/sprint-1/F-06-copy-status.md` | To be created |
-| F-07 | `docs/sprints/sprint-1/F-07-history-recording.md` | To be created |
+| F-06 | `docs/sprints/sprint-1/F-06-copy-status.md` | #23 |
+| F-07 | `docs/sprints/sprint-1/F-07-history-recording.md` | #21 |
 | SR-01, SR-02, SR-03, SR-04, SR-07 | `docs/sprints/sprint-1/system-checks.md` | #12 adds the file with the SR-03 section, #14 adds SR-01 and SR-02, and #19 adds SR-04 and SR-07. |
 
 `system-checks.md` holds the test specifications (preconditions, input, action, expected result) for every Sprint 1 SR acceptance criterion, AC-SR01-01 to AC-SR07-01. Each feature contract also lists the SR rules it must satisfy.
