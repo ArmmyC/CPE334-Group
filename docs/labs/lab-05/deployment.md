@@ -130,4 +130,19 @@ GitHub sign-in is limited to this repository (by name and by ID), the `main` bra
 
 ## Cost and teardown
 
-A budget alert is set on the billing account before any resource exists. After the course ends, delete the Cloud SQL instance, the Cloud Run service and job, the Artifact Registry repository, and the project.
+A budget alert is set on the billing account before any resource exists (฿200 a month, alerts at ฿100, ฿180, and ฿200). It only sends an email and does not stop anything. Cloud SQL is the one resource that costs real money, about ฿14 to ฿15 a day while it runs, even with no traffic. Cloud Run (minimum 0 instances), Artifact Registry, and Secret Manager cost almost nothing at this size.
+
+After the course ends, delete the Cloud SQL instance, the Cloud Run service and job, the Artifact Registry repository, and the project.
+
+### Stop and start the database
+
+Stop Cloud SQL whenever nobody needs the app for a few days. Compute billing stops, and only the small disk charge stays. The project owner runs these in Cloud Shell (or presses Stop and Start on the instance page):
+
+```bash
+# stop
+gcloud sql instances patch cpe334-db --project cpe334-lab-equipment --activation-policy NEVER
+# start (takes 1 to 3 minutes)
+gcloud sql instances patch cpe334-db --project cpe334-lab-equipment --activation-policy ALWAYS
+```
+
+While the instance is stopped, the app cannot reach its data and `/api/ready` fails. A run of `deploy.yml` also fails at the migration job. So start the instance before a merge into `main`, before a demo, and before grading, and wait until it shows as running. The data is kept while the instance is stopped.
