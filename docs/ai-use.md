@@ -1,4 +1,46 @@
 # AI-Use Declaration
 
+This file lists the AI use in the Lab Equipment Borrowing System project, for the Sprint 1 release (`v0.1.0`). ArmmyC wrote the sections for ArmmyC. The sections for Bank848 are his to add, because only he knows how he used AI.
+
+The prompts below are copied from the session transcripts. They are short because most of the work was done by repeating a short instruction inside a longer session, with the plan, the contracts, and the review rules already in context.
+
+## ArmmyC
+
 | Date | Tool | Task assisted | Checked by |
 | --- | --- | --- | --- |
+| 2026-11-03 | Claude Code | Reading the project spec, comparing Theme 2 and Theme 4, and proposing the stack. | ArmmyC chose Theme 2 and the "Core set" of stack additions. |
+| 2026-11-03 to 2026-11-05 | Claude Code | Drafting the SRS (#6), the feature inventory and traceability (#9), the System-Level SDS (#10), and the three-sprint plan (#11). | Bank848 reviewed and approved each pull request. |
+| 2026-11-03 to 2026-11-06 | Claude Code | Application scaffold (#7), data model, constraints and seed (#13), and sign-in with session and current user, F-01 (#15). Each feature has its contract, then tests, then the code. | Bank848 approved each pull request. Lint, format, build, and tests pass. |
+| 2026-11-07 | Claude Code | Borrow requests, F-03 (#17), and the F-05 contract with the SR-04 and SR-07 checks (#20). | Bank848 approved each pull request. |
+| 2026-11-09 to 2026-11-13 | Claude Code, a second session acting as reviewer | Reviewing Bank848's pull requests (#25 to #31), drafting review comments, and posting them after ArmmyC approved the text. | ArmmyC approved the comments before each post, with "Post all five" and similar answers. Bank848 replied to the threads. |
+| 2026-11-10 to 2026-11-11 | Claude Code with the humanizer skill | Rewriting the review comments and pull request text so they read plainly. | ArmmyC approved the text before posting. |
+| 2026-11-13 | Claude Code | Active loan list, F-05 (#37), the F-04 follow-up (#38), and release preparation (#39). | Bank848 approved #37 and #38. #39 is waiting for his review. |
+| 2026-11-13 | Claude Code, a second session | Running the three manual checks (SR-03-03, SR-04-01, SR-07-01) on `af54726` and writing them into the release pull request draft. | ArmmyC reads the draft before the release pull request is opened. |
+
+## Representative prompts
+
+| Date | Prompt | What it produced |
+| --- | --- | --- |
+| 2026-11-03 | "Read the spec in this folder and understand it" | A summary of the spec and its open points, such as the 10-minute and 4-minute demo video length. |
+| 2026-11-03 | "I mean overall theme 2 vs 4" | A comparison of the two themes. ArmmyC then answered "let's do theme 2". |
+| 2026-11-03 | "you can suggest more stack tho, if you have any recommendation" | A list of optional additions. ArmmyC answered "Core set", and the optional extras (TanStack Query, pino, zod-to-openapi) were declined. |
+| 2026-11-03 | "can we use docker in wsl instead?" | The setup that runs the test databases in Docker inside WSL, now in the README. |
+| 2026-11-07 | "Start F-03", then "Yes, write tests", "Start implementing", "Build the UI", "Open the PR" | The F-03 contract, then the failing tests, then the server, then the UI, then the pull request, in that order. |
+| 2026-11-09 | "make another session as reviewer for reviewing bank pr" | A separate reviewer session that read Bank848's pull requests against the contracts. |
+| 2026-11-13 | "reply to him telling him to merge, this is rule that we won't merge our own pr, note that in CLAUDE.md" | The merge rule in `CLAUDE.md`, and a comment on the pull request asking Bank848 to merge. |
+| 2026-11-13 | "Start F-05", then "Yes, fix them" | The F-05 implementation on top of the merged contract, then the follow-up pull request #38 for the three items agreed on #28. |
+
+## How the output was checked and corrected
+
+- **Contracts before tests before code.** For each feature the contract is committed first, the tests next, and the tests are run and seen to fail before the implementation. The release pull request lists the three commit hashes for each feature.
+- **Wrong output that was caught.**
+  - The F-05 contract said only "200 with the active loans". SDS section 5 says list endpoints return `{ "items": [...] }`, so version 0.3 of the contract states that body, before the tests.
+  - The F-04 test for AC-F04-09 counted `copy` rows. The criterion is about the catalog count, so the test now reads `availableCount` from `GET /api/equipment-types` (#38).
+  - A client test for F-05 checked the table headers before the data loaded and failed. This was a bug in the test, not in the code, and the test now waits for the data first.
+  - TEST-SR03-03 said a custodian can see the catalog. F-02 makes the catalog borrower only, so the wording was fixed (#39).
+- **A process mistake.** #28 was merged after an approval with an empty diff, without checking the three items that were agreed when it was retargeted. The reviewer's changes arrived five minutes later. The items were added in #38, and the rule is now to check what was agreed before merging.
+- **Rules kept outside the model.** Nobody merges their own pull request, and the other member reviews and merges. This is in `CLAUDE.md`, and the reviewer session and the author session follow it. Two earlier pull requests (#25 and #26) were merged by their author, and the release pull request says so.
+
+## Bank848
+
+To be added by Bank848.
