@@ -12,6 +12,7 @@ Sources: [SRS](../../srs.md) section 3 (FR-04, FR-05) and BR-16, [System-Level S
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-08 | @Bank848 | First contract, written before the tests (#22). |
+| 0.2 | 2026-11-13 | @ArmmyC | F-03 (#16, PR #17) places `RequestForm` in the request form slot, so the slot rows describe the form. |
 
 ## 1. Feature-Level SDS
 
@@ -89,7 +90,7 @@ Error codes used by this feature are `VALIDATION_ERROR`, `UNAUTHENTICATED`, `FOR
 | Detail loading | "Loading..." while the request is in flight. |
 | Detail not found | "Equipment type not found." with a link back to the catalog, when the API returns 404. |
 | Detail error | "Could not load this equipment type." with a Retry button, for any other failure. |
-| Request form slot | Below the details there is an empty region with `data-testid="request-form-slot"`. F-03 places its `RequestForm` component there, with the type id as `equipmentTypeId`. This feature does not import `RequestForm`, because F-03 is not merged. |
+| Request form slot | Below the details there is a region with `data-testid="request-form-slot"`. It holds the F-03 `RequestForm`, with the type id as `equipmentTypeId`, or "No copies of this equipment are available right now." when the Available count is 0 (F-03 contract section 3). |
 | Navigation | The route guard from F-01 sends a custodian from `/catalog` and `/catalog/:typeId` to their home page. |
 
 The page and the detail are usability only. The API checks the role again (SDS 4.1).
@@ -127,7 +128,7 @@ Supporting checks that have no AC of their own:
 | Unknown query parameter | API | `?q=arduino` on either endpoint returns 400 `VALIDATION_ERROR` with `fields.q`. |
 | Catalog states | UI | The page shows "Loading...", "No equipment types in the catalog yet.", and "Could not load the catalog." with a Retry button that loads again, as TEST-SR02-03 requires. A 401 shows the login page. |
 | Detail states | UI | The page shows "Loading...", "Equipment type not found." on 404, and "Could not load this equipment type." with a Retry button on another failure. |
-| Request form slot | UI | The detail page has an empty `request-form-slot` region and no form. F-03 changes this test when it places `RequestForm`. |
+| Request form slot | UI | The `request-form-slot` region holds the request form, which submits this type's id. With no Available copy, it holds the no-copy message and no form. |
 | Type link | UI | Clicking a type name on the catalog opens its detail page. |
 | Route guard | UI | A custodian at `/catalog/1` is sent to `/custodian/requests`. |
 
