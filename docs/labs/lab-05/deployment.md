@@ -72,21 +72,37 @@ In the cloud the job `cpe334-migrate` runs the same two commands, with the secre
 
 ## Release procedure
 
-1. Open a pull request. CI (lint, format check, build, tests, end-to-end tests, Docker build) must pass, and the partner approves.
-2. Merge into `main`. `deploy.yml` starts and waits on the `demo` environment.
-3. A required reviewer approves the run. The workflow then builds the image tagged with the commit SHA, pushes it, runs the migration job, deploys the service by image digest, and runs `infra/smoke.sh` against the public URL. Only one deploy runs at a time and a running one is never cancelled.
-4. The run summary lists the commit, the image digest, and the URL.
+Only a reviewed release reaches `main`, and only `main` deploys (plan section 2, R-09).
 
-Find the commit that is running:
+1. Feature and fix pull requests go into the sprint staging branch (`sprint-1`, `sprint-2`, `sprint-3`). CI (lint, format check, build, tests, end-to-end tests, Docker build) must pass, and the teammate reviews and merges. Authors do not approve or merge their own pull requests.
+2. A release pull request moves the staging branch into `main`. The member who did not write it reviews it. Its description lists what is merged and the recorded build and test results.
+3. The release commit on `main` gets a version tag (`v0.1.0`, `v0.2.0-rc.1`, and so on, as plan section 2 lists them). The tag is pushed to GitHub.
+4. The merge into `main` starts `deploy.yml`, which waits on the `demo` environment. A required reviewer approves the run. The workflow then builds the image tagged with the commit SHA, pushes it, runs the migration job, deploys the service by image digest, and runs `infra/smoke.sh` against the public URL. Only one deploy runs at a time and a running one is never cancelled.
+5. The run summary lists the commit, the image digest, and the URL.
+
+Find the commit that is running, and the release tag that names it:
 
 ```bash
-gcloud run services describe cpe334-app --region asia-southeast1 --project cpe334-lab-equipment \
-  --format='value(metadata.labels.git-sha)'
+sha=$(gcloud run services describe cpe334-app --region asia-southeast1 --project cpe334-lab-equipment \
+  --format='value(metadata.labels.git-sha)')
+echo "$sha"
+git fetch --tags && git tag --points-at "$sha"
 ```
 
-The label holds the full commit SHA of the deployed image. The image tag in Artifact Registry is the same SHA, and `infra/smoke.sh` can be run by hand against any instance.
+The label holds the full commit SHA of the deployed image, and the tag printed next to it is the release (for example `v0.2.0-rc.1`). The image tag in Artifact Registry is the same SHA, and `infra/smoke.sh` can be run by hand against any instance.
 
-Roll back by redeploying an earlier image tag. Migrations are additive within a sprint, so an older image still works.
+Roll back by redeploying the image of an earlier release. Set the `git-sha` label in the same command, or the command above would keep naming the commit that was rolled back:
+
+```bash
+old=<full commit sha of the earlier release>
+image=asia-southeast1-docker.pkg.dev/cpe334-lab-equipment/cpe334/app
+digest=$image@$(gcloud artifacts docker images describe "$image:$old" --project cpe334-lab-equipment \
+  --format='value(image_summary.digest)')
+gcloud run deploy cpe334-app --project cpe334-lab-equipment --region asia-southeast1 \
+  --image "$digest" --update-labels "git-sha=$old"
+```
+
+Migrations are additive within a sprint, so an older image still works with the current database.
 
 `infra/gcp/03-manual-deploy.sh` does the same build, migrate, and deploy by hand in Cloud Shell. It stops unless the folder is clean and at `origin/main`, so the SHA label stays true.
 
