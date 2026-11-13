@@ -79,7 +79,7 @@ Each Sprint 1 feature gets its own contract in `docs/sprints/sprint-1/`, committ
 | F-01 | `docs/sprints/sprint-1/F-01-sign-in.md` | #14 |
 | F-02 | `docs/sprints/sprint-1/F-02-catalog.md` | #22 |
 | F-03 | `docs/sprints/sprint-1/F-03-borrow-requests.md` | #16 |
-| F-04 | `docs/sprints/sprint-1/F-04-checkout.md` | To be created |
+| F-04 | `docs/sprints/sprint-1/F-04-checkout.md` | #24 |
 | F-05 | `docs/sprints/sprint-1/F-05-active-loans.md` | #18 |
 | F-06 | `docs/sprints/sprint-1/F-06-copy-status.md` | #23 |
 | F-07 | `docs/sprints/sprint-1/F-07-history-recording.md` | #21 |

@@ -90,6 +90,8 @@ describe('TEST-F03-04 my requests and loans in the UI (AC-F03-04, FR-07)', () =>
     const loanRow = screen.getByRole('row', { name: /Logic analyzer/ });
     expect(within(loanRow).getByText('LA-0002')).toBeInTheDocument();
     expect(within(loanRow).getByText('2026-11-12')).toBeInTheDocument();
+    // 03:00 UTC is 10:00 in Asia/Bangkok (AC-F04-03, the display half).
+    expect(within(loanRow).getByText('5 Nov 2026, 10:00')).toBeInTheDocument();
   });
 
   it('shows the empty states when there are no requests and no loans', async () => {

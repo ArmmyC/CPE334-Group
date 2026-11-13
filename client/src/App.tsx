@@ -7,22 +7,13 @@ import { EquipmentDetailPage } from './EquipmentDetailPage';
 import { CopiesPage } from './CopiesPage';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
+import { PendingRequestsPage } from './PendingRequestsPage';
 
 export function App() {
   return (
     <AuthProvider>
       <Shell />
     </AuthProvider>
-  );
-}
-
-// A page that a later feature replaces (F-02 catalog, F-04 pending requests).
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <section>
-      <h1 className="h3">{title}</h1>
-      <p className="text-body-secondary">This page is not built yet.</p>
-    </section>
   );
 }
 
@@ -147,7 +138,7 @@ function Content() {
         path="/custodian/requests"
         element={
           <RequireRole role="CUSTODIAN">
-            <PlaceholderPage title="Pending requests" />
+            <PendingRequestsPage />
           </RequireRole>
         }
       />
