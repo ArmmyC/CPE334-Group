@@ -6,6 +6,7 @@ import { CatalogPage } from './CatalogPage';
 import { EquipmentDetailPage } from './EquipmentDetailPage';
 import { CopiesPage } from './CopiesPage';
 import { LoginPage } from './LoginPage';
+import { MyRequestsPage } from './MyRequestsPage';
 
 export function App() {
   return (
@@ -65,6 +66,11 @@ function Header() {
           )}
           {state.status === 'signed-in' && (
             <div className="d-flex align-items-center gap-2 text-white">
+              {state.user.role === 'BORROWER' && (
+                <Link className="text-white me-2" to="/my">
+                  My requests
+                </Link>
+              )}
               <span>{state.user.name}</span>
               <span className="badge text-bg-light">{ROLE_LABEL[state.user.role]}</span>
               <button
@@ -126,6 +132,14 @@ function Content() {
         element={
           <RequireRole role="BORROWER">
             <EquipmentDetailPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/my"
+        element={
+          <RequireRole role="BORROWER">
+            <MyRequestsPage />
           </RequireRole>
         }
       />

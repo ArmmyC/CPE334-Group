@@ -1,17 +1,22 @@
 import {
   apiErrorSchema,
+  borrowRequestSchema,
   catalogResponseSchema,
   currentUserSchema,
   custodianCopiesResponseSchema,
   custodianCopySchema,
   equipmentTypeDetailSchema,
   healthResponseSchema,
+  loanSchema,
+  type BorrowRequest,
+  type CreateRequest,
   type CatalogResponse,
   type ChangeableCopyStatus,
   type CurrentUser,
   type CustodianCopy,
   type EquipmentTypeDetail,
   type HealthResponse,
+  type Loan,
   type LoginRequest,
 } from '@cpe334-group/shared';
 
@@ -83,6 +88,31 @@ export async function logout(): Promise<void> {
       throw error;
     }
   }
+}
+
+// The borrower's own requests, newest first (F-03).
+export async function fetchMyRequests(): Promise<BorrowRequest[]> {
+  const response = await send('/api/requests', { method: 'GET' });
+  return borrowRequestSchema.array().parse(await response.json());
+}
+
+// The borrower's own loans, newest first (F-03).
+export async function fetchMyLoans(): Promise<Loan[]> {
+  const response = await send('/api/loans', { method: 'GET' });
+  return loanSchema.array().parse(await response.json());
+}
+
+export async function submitRequest(input: CreateRequest): Promise<BorrowRequest> {
+  const response = await send('/api/requests', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return borrowRequestSchema.parse(await response.json());
+}
+
+export async function cancelRequest(id: number): Promise<BorrowRequest> {
+  const response = await send(`/api/requests/${id}/cancel`, { method: 'POST' });
+  return borrowRequestSchema.parse(await response.json());
 }
 
 // F-06 copy maintenance status (SDS 5.2).

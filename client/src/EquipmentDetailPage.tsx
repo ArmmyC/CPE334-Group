@@ -1,13 +1,14 @@
 import { Link, useParams } from 'react-router-dom';
 import { ApiRequestError, fetchEquipmentType } from './api';
+import { RequestForm } from './RequestForm';
 import { errorMessage, useLoad } from './useLoad';
 
 function BackLink() {
   return <Link to="/catalog">Back to catalog</Link>;
 }
 
-// One equipment type (F-02, FR-05). The empty slot at the end is where F-03 places its
-// RequestForm, with this type's id as `equipmentTypeId`.
+// One equipment type (F-02, FR-05). The slot at the end holds the F-03 request form, or a
+// message in its place when no copy is Available. The API checks availability again on submit.
 export function EquipmentDetailPage() {
   const { typeId = '' } = useParams();
   const { state, reload } = useLoad(() => fetchEquipmentType(typeId), typeId);
@@ -57,7 +58,15 @@ export function EquipmentDetailPage() {
         <dt className="col-sm-3">Availability</dt>
         <dd className="col-sm-9">{type.availableCount} available</dd>
       </dl>
-      <div data-testid="request-form-slot" />
+      <div data-testid="request-form-slot">
+        {type.availableCount > 0 ? (
+          <RequestForm equipmentTypeId={type.id} />
+        ) : (
+          <p className="text-body-secondary">
+            No copies of this equipment are available right now.
+          </p>
+        )}
+      </div>
     </section>
   );
 }

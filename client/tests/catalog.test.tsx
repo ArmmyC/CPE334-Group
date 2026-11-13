@@ -222,14 +222,50 @@ describe('TEST-F02-02 type detail page (AC-F02-02, FR-05)', () => {
     expect(await screen.findByText('1 day')).toBeInTheDocument();
   });
 
-  it('leaves an empty slot for the F-03 request form', async () => {
-    stubApi({ ...asBorrower, 'GET /api/equipment-types/4': () => json(detail) });
+  it('places the F-03 request form in the slot and submits this type (TEST-F03-01 UI)', async () => {
+    const sent: unknown[] = [];
+    stubApi({
+      ...asBorrower,
+      'GET /api/equipment-types/4': () => json(detail),
+      'POST /api/requests': (init) => {
+        sent.push(JSON.parse(String(init?.body)));
+        return json(
+          {
+            id: 21,
+            equipmentType: { id: 4, name: 'Arduino Uno R3' },
+            lab: { name: 'Embedded Systems Lab' },
+            purpose: 'Lab 3 project',
+            status: 'PENDING',
+            createdAt: '2026-11-13T03:00:00.000Z',
+            decidedAt: null,
+          },
+          201,
+        );
+      },
+    });
+    const user = userEvent.setup();
 
     renderApp('/catalog/4');
 
     const slot = await screen.findByTestId('request-form-slot');
-    expect(slot).toBeEmptyDOMElement();
-    expect(screen.queryByRole('form')).toBeNull();
+    await user.type(within(slot).getByLabelText('Purpose (optional)'), 'Lab 3 project');
+    await user.click(within(slot).getByRole('button', { name: 'Submit request' }));
+
+    expect(await within(slot).findByRole('status')).toHaveTextContent('Request submitted.');
+    expect(sent).toEqual([{ equipmentTypeId: 4, purpose: 'Lab 3 project' }]);
+  });
+
+  it('shows the no-copy message in place of the form when no copy is available', async () => {
+    stubApi({
+      ...asBorrower,
+      'GET /api/equipment-types/4': () => json({ ...detail, availableCount: 0 }),
+    });
+
+    renderApp('/catalog/4');
+
+    const slot = await screen.findByTestId('request-form-slot');
+    expect(slot).toHaveTextContent('No copies of this equipment are available right now.');
+    expect(within(slot).queryByRole('button', { name: 'Submit request' })).toBeNull();
   });
 });
 
