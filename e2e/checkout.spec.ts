@@ -8,22 +8,21 @@ async function logIn(page: Page, email: string) {
   await page.getByRole('button', { name: 'Log in' }).click();
 }
 
-// TEST-E2E-01 (AC-F03-01, AC-F04-02, AC-F03-04). The request form is F-02 and is not in this
-// branch, so the borrower submits the request through the F-03 API. The custodian checkout and
-// the borrower's loan list run in the browser. Add the form step when F-02 merges.
-test('TEST-E2E-01 a custodian checks out a request and the borrower sees the loan', async ({
+// TEST-E2E-01 (AC-F03-01, AC-F04-02, AC-F03-04). The borrower submits the request through the
+// form on the equipment detail page, the custodian checks it out, and the borrower sees the loan.
+test('TEST-E2E-01 a borrower requests through the form, a custodian checks it out, and the borrower sees the loan', async ({
   browser,
-  request,
 }) => {
   // The first seeded type, Arduino Uno R3 in the Embedded Systems Lab, has Available copies.
-  const login = await request.post('/api/auth/login', {
-    data: { email: seededBorrower.email, password: e2ePassword },
-  });
-  expect(login.ok()).toBe(true);
-  const created = await request.post('/api/requests', {
-    data: { equipmentTypeId: 1, purpose: 'E2E checkout' },
-  });
-  expect(created.status()).toBe(201);
+  const borrowerPage = await (await browser.newContext()).newPage();
+  await logIn(borrowerPage, seededBorrower.email);
+  await expect(borrowerPage).toHaveURL(/\/catalog$/);
+  await borrowerPage.getByRole('link', { name: 'Arduino Uno R3' }).click();
+  await borrowerPage.getByLabel('Purpose (optional)').fill('E2E checkout');
+  await borrowerPage.getByRole('button', { name: 'Submit request' }).click();
+  await expect(
+    borrowerPage.getByRole('status').filter({ hasText: 'Request submitted.' }),
+  ).toBeVisible();
 
   const custodianPage = await (await browser.newContext()).newPage();
   await logIn(custodianPage, seededCustodian.email);
@@ -44,9 +43,6 @@ test('TEST-E2E-01 a custodian checks out a request and the borrower sees the loa
   await expect(custodianPage.getByRole('dialog')).toHaveCount(0);
   await expect(custodianPage.getByRole('row', { name: /Arisa Kittipong/ })).toHaveCount(0);
 
-  const borrowerPage = await (await browser.newContext()).newPage();
-  await logIn(borrowerPage, seededBorrower.email);
-  await expect(borrowerPage).toHaveURL(/\/catalog$/);
   await borrowerPage.goto('/my');
   const loanRow = borrowerPage.getByRole('row', { name: /EMB-ARD-001/ });
   await expect(loanRow).toContainText('Arduino Uno R3');

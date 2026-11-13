@@ -12,6 +12,7 @@ Sources: [SRS](../../srs.md) section 3 (FR-08, FR-09), [System-Level SDS](../../
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-08 | @Bank848 | First contract, written before the tests (#24). |
+| 0.2 | 2026-11-13 | @ArmmyC | F-02 and F-03 are merged, so TEST-F04-09 reads the catalog count and TEST-E2E-01 submits the request through the form, as agreed at the retarget in #28. |
 
 ## 1. Feature-Level SDS
 
@@ -120,7 +121,7 @@ These are the AC from [traceability.md](../../traceability.md) section 4, unchan
 
 ## 5. Test specifications
 
-API tests run against the test database with the fixed clock from F-01. Each test creates its own labs, custodians, borrowers, types, copies, and requests, and inserts requests directly because the request form is F-03 and F-02.
+API tests run against the test database with the fixed clock from F-01. Each test creates its own labs, custodians, borrowers, types, copies, and requests, and inserts requests directly, except TEST-E2E-01, where the borrower uses the request form.
 
 | Test | AC | Level | Precondition or input | Action | Expected result |
 | --- | --- | --- | --- | --- | --- |
@@ -132,8 +133,8 @@ API tests run against the test database with the fixed clock from F-01. Each tes
 | TEST-F04-06 | AC-F04-06 | API | A borrower with a session | Call the pending list, the available copies, and checkout | Each returns 403 `FORBIDDEN`, and nothing changes. |
 | TEST-F04-07 | AC-F04-07 | API | A custodian assigned to Lab A, and a Pending request in Lab B with a copy in Lab B. A Pending request in Lab A and a copy in Lab B. | Call available copies and checkout for the Lab B request. Check out the Lab A request with the Lab B copy. | The Lab B request gives 404 `NOT_FOUND` on both calls. The Lab B copy on a Lab A request gives 404 `NOT_FOUND`. Nothing changes. |
 | TEST-F04-08 | AC-F04-08 | API | A Fulfilled request, a Cancelled request, and a request already checked out once | Check out each with an Available copy | 409 `INVALID_STATUS` for each. The copy stays `AVAILABLE`, and no new loan or history entry exists. |
-| TEST-F04-09 | AC-F04-09 | API, database | A type with three Available copies | Count the Available copies of the type, check out one, and count again | The count drops from 3 to 2. The catalog endpoint is in F-02 (PR #26) and is not in this branch. This test counts `copy` rows with status `AVAILABLE` directly. When F-02 merges, the same test is extended to read the count from `GET /api/equipment-types`. |
-| TEST-E2E-01 | AC-F03-01, AC-F04-02, AC-F03-04 | E2E | A seeded Pending request for a seeded type | A custodian logs in, opens Pending requests, checks out a copy. The borrower logs in and opens My requests. | The spec inserts the Pending request directly, because the request form is F-02 (PR #26) and F-03. It covers the custodian checkout and the borrower seeing the loan. The borrower's request form step is added when F-02 merges. |
+| TEST-F04-09 | AC-F04-09 | API, database | A type with three Available copies | Count the Available copies of the type, check out one, and count again | The type's `availableCount` from `GET /api/equipment-types`, read as a borrower, drops from 3 to 2. |
+| TEST-E2E-01 | AC-F03-01, AC-F04-02, AC-F03-04 | E2E | A seeded borrower and custodian, and a seeded type with Available copies | A borrower logs in, opens the type from the catalog, and submits the request form. A custodian logs in, opens Pending requests, and checks out a copy. The borrower opens My requests. | The request goes through the form on the equipment detail page (F-02, F-03), not through the API. The custodian sees it in Pending requests and checks out a copy, and the borrower sees the loan in My requests. |
 
 Supporting checks that have no AC of their own:
 
@@ -163,7 +164,7 @@ Supporting checks that have no AC of their own:
 ## 7. Definition of Done
 
 - The contract is committed before the tests, and the tests fail before the implementation.
-- TEST-F04-01 to TEST-F04-09 and the supporting checks pass. TEST-F04-09 is extended to the catalog when F-02 merges. TEST-E2E-01 is completed when F-02 merges. The display half of AC-F04-03 (checkout time shown in Asia/Bangkok) is checked by `client/tests/requests.test.tsx`, test "shows my requests and loans...", where 03:00 UTC shows as 10:00. The My requests page is F-03.
+- TEST-F04-01 to TEST-F04-09 and the supporting checks pass. The display half of AC-F04-03 (checkout time shown in Asia/Bangkok) is checked by `client/tests/requests.test.tsx`, test "shows my requests and loans...", where 03:00 UTC shows as 10:00. The My requests page is F-03.
 - Lint, format, build, and all existing tests pass.
 - The `TODO(F-07)` calls in F-03 are replaced in their own commit, with tests, and @ArmmyC has been told.
 - Reviewed by @ArmmyC and merged into `sprint-1`.
