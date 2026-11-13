@@ -5,3 +5,8 @@ export const e2ePassword = 'e2e-password-for-tests';
 export const seededBorrower = { email: 'borrower1@example.com', name: 'Arisa Kittipong' };
 
 export const seededCustodian = { email: 'custodian.embedded@example.com', name: 'Napat Srisuk' };
+
+export const seededNetworkCustodian = { email: 'custodian.network@example.com' };
+
+// The first seeded equipment type, in the Embedded Systems Lab, has Available copies.
+export const seededEquipmentTypeName = 'Arduino Uno R3';

@@ -15,7 +15,7 @@ Both students share requirements, design, testing, implementation, review, deplo
 
 ## Status
 
-Sprint 1 in progress. The scaffold, the data model, the seed data, and sign-in (F-01) are in place. Seeded users log in, see their name and role, and log out. The login page also reports whether the API and the database are reachable. Domain features are added by their own Issues and contracts.
+Sprint 1 is complete, and the release is `v0.1.0`. Seeded users log in with one of two roles. A borrower browses the equipment catalog and requests a copy. A custodian checks the request out with a due date, sees the active loans of their labs, and sets a copy to In maintenance or back to Available. Every status change is recorded in the history. Returns, overdue tracking, and reports come in later sprints. Docker, CI, and the GCP deployment are Lab 5 work.
 
 ## Stack
 

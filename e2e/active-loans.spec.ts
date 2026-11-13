@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { e2ePassword, seededCustodian } from './seed-data';
+import { e2ePassword, seededCustodian, seededNetworkCustodian } from './seed-data';
 
 async function logIn(page: Page, email: string) {
   await page.goto('/login');
@@ -24,7 +24,7 @@ test('TEST-F05-01 and TEST-F05-02: a custodian sees the active loans of the assi
   await expect(row).toContainText('Embedded Systems Lab');
 
   const networkPage = await (await browser.newContext()).newPage();
-  await logIn(networkPage, 'custodian.network@example.com');
+  await logIn(networkPage, seededNetworkCustodian.email);
   await networkPage.getByRole('link', { name: 'Active loans' }).click();
   await expect(networkPage.getByRole('heading', { name: 'Active loans' })).toBeVisible();
   await expect(
