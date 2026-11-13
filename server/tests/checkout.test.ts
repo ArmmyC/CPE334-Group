@@ -507,26 +507,32 @@ describe('TEST-F04-08 only a Pending request can be checked out (AC-F04-08, BR-0
 });
 
 describe('TEST-F04-09 the Available count drops by one (AC-F04-09, FR-09, FR-04)', () => {
-  // The catalog endpoint is F-02 (PR #26) and is not in this branch. The count is read from the
-  // copy table, which is what the catalog counts. Extend this test to the catalog after F-02 merges.
-  it('leaves one fewer Available copy of the type after checkout', async () => {
+  it('shows one fewer Available copy of the type in the catalog after checkout', async () => {
     const app = createTestApp();
     const { lab, type } = await setUpLab();
     const { cookie } = await signIn(app, 'CUSTODIAN', [lab.id]);
+    const borrower = await signIn(app, 'BORROWER');
     const req = await pendingRequest(type.id);
     const copies = [
       await createCopy(type.id),
       await createCopy(type.id),
       await createCopy(type.id),
     ];
-    const available = () =>
-      prisma.copy.count({ where: { equipmentTypeId: type.id, status: 'AVAILABLE' } });
-    expect(await available()).toBe(3);
+    // The count a borrower sees in the catalog (F-02), for this type.
+    const catalogCount = async () => {
+      const response = await get(app, borrower.cookie, '/api/equipment-types');
+      expect(response.status).toBe(200);
+      const types = (
+        response.body.items as { equipmentTypes: { id: number; availableCount: number }[] }[]
+      ).flatMap((group) => group.equipmentTypes);
+      return types.find((item) => item.id === type.id)?.availableCount;
+    };
+    expect(await catalogCount()).toBe(3);
 
     const response = await checkout(app, cookie, req.id, { copyId: copies[1].id });
 
     expect(response.status).toBe(201);
-    expect(await available()).toBe(2);
+    expect(await catalogCount()).toBe(2);
   });
 });
 
