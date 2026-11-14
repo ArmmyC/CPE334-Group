@@ -38,7 +38,7 @@ gcloud run jobs deploy "$JOB" --project "$PROJECT" --region "$REGION" --image "$
   --service-account "run-migrate@$PROJECT.iam.gserviceaccount.com" \
   --set-cloudsql-instances "$CONNECTION" \
   --set-secrets "DATABASE_URL=DATABASE_URL:latest,SEED_USER_PASSWORD=SEED_USER_PASSWORD:latest,SMOKE_PASSWORD=SMOKE_PASSWORD:latest" \
-  --set-env-vars "SMOKE_EMAIL=$SMOKE_EMAIL" --update-labels "git-sha=$SHA" \
+  --set-env-vars "SMOKE_EMAIL=$SMOKE_EMAIL" --labels "git-sha=$SHA" \
   --command sh \
   --args=-c,"node node_modules/prisma/build/index.js migrate deploy --schema server/prisma/schema.prisma && node server/dist/seed-cli.js" \
   --max-retries 0 --task-timeout 600s --quiet
