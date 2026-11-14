@@ -36,13 +36,13 @@ describe('TEST-SR01-01 every protected route needs a session (AC-SR01-01, NFR-02
 });
 
 describe('Supporting check: public routes', () => {
-  it('lists only the health check and login as public', () => {
+  it('lists only the health check, the readiness check, and login as public', () => {
     expect(
       routes
         .filter(({ access }) => access === 'public')
         .map(({ method, path }) => `${method.toUpperCase()} ${path}`)
         .sort(),
-    ).toEqual(['GET /api/health', 'POST /api/auth/login']);
+    ).toEqual(['GET /api/health', 'GET /api/ready', 'POST /api/auth/login']);
   });
 });
 

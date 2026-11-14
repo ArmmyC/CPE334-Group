@@ -56,6 +56,19 @@ npm run db:test:up
 
 Replace the placeholders in `.env.test` the same way, and keep its `APP_ORIGIN` for the E2E tests. The tests apply the migrations to the test database themselves.
 
+## Docker image and CI
+
+`docker build -t cpe334-group .` builds one image that holds the API and the built web app. It listens on `PORT` (8080 by default) and runs as a non-root user. The image needs `DATABASE_URL` and `APP_ORIGIN`. Run the migration and the seed with the same image before the first start:
+
+```bash
+docker run --rm -e DATABASE_URL cpe334-group node node_modules/prisma/build/index.js migrate deploy --schema server/prisma/schema.prisma
+docker run --rm -e DATABASE_URL -e SEED_USER_PASSWORD cpe334-group node server/dist/seed-cli.js
+```
+
+`GET /api/health` says the database answers, and `GET /api/ready` also says every migration is applied.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, format check, build, tests, end-to-end tests, and the image check on every pull request into `main` and `sprint-*` branches. The design is in [docs/sprints/lab-5/ci-and-image.md](docs/sprints/lab-5/ci-and-image.md).
+
 ### Seeded accounts
 
 | Email                                                                     | Role      | Lab                  |

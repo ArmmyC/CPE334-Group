@@ -218,8 +218,8 @@ The feature contracts define each endpoint's fields and errors. This list fixes 
 
 | Method and path | Role | Sprint | Purpose |
 | --- | --- | --- | --- |
-| `GET /api/health` | Public | 1 | Liveness. Target response `{ "status": "ok" }` without a database call. The Sprint 1 scaffold still checks the database here, and the Lab 5 cloud-ready Issue moves that check to `/api/ready`. |
-| `GET /api/ready` | Public | Lab 5 | Readiness. `{ "status": "ready", "database": "connected" }`, or 503 `{ "status": "not_ready" }` when the database check fails within 2 seconds. Used by the deploy smoke test. |
+| `GET /api/health` | Public | 1 | Liveness. `{ "status": "ok", "database": "ok" }`, or 503 `{ "status": "error", "database": "unreachable" }` when the database check fails. The Sprint 1 scaffold checks the database here and Lab 5 keeps that check, so `/api/health` stays a database check and `/api/ready` adds the migration check. |
+| `GET /api/ready` | Public | Lab 5 | Readiness. `{ "status": "ready", "database": "connected" }`, or 503 `{ "status": "not_ready" }` when the database check or the migration check (at least one `_prisma_migrations` row, none unfinished or rolled back) fails within 2 seconds. Used by the deploy smoke test. |
 | `POST /api/auth/login` | Public | 1 | Start a session |
 | `POST /api/auth/logout` | Signed in | 1 | End the session |
 | `GET /api/auth/me` | Signed in | 1 | Current user |
@@ -372,6 +372,7 @@ The Vite proxy's `changeOrigin` option rewrites the `Host` header but not `Origi
 | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | API, migrations, seed | Yes | `.env` and `.env.test` (placeholders in the example files). The F-04 work adds `connection_limit=5` to both examples (section 2.5). | Secret Manager, with `connection_limit=5` |
 | `PORT` | API | No | `.env`, default 4100 | Set by Cloud Run |
+| `CLIENT_DIR` | API (serves the built client) | No | Unset (the Vite dev server serves the client) | Unset in the image: the default `client/dist` next to `server/dist` is used. Set it only to serve the client from another folder. |
 | `NODE_ENV` | API (secure cookie, log format) | No | Unset (development) | `production` in the image |
 | `APP_ORIGIN` | API (Origin check) | No | `.env` and `.env.test`, see section 7.4. The F-01 work adds it to both example files. | Cloud Run environment variable with both service URLs (section 7.4) |
 | `SMOKE_EMAIL`, `SMOKE_PASSWORD` | Seed (creates the smoke borrower, section 3.5) and the deploy smoke test | Yes (password) | Not used | `SMOKE_PASSWORD` in Secret Manager only, read by the migration job and by the smoke step through `gcloud secrets versions access`. `SMOKE_EMAIL` is a plain variable on the migration job and the GitHub environment `demo`. |
@@ -410,7 +411,7 @@ flowchart LR
 
 | Component | Design |
 | --- | --- |
-| Image | One multi-stage Dockerfile. The build stage runs `npm ci` and `npm run build` from the repository root, because `server` imports the `@cpe334-group/shared` workspace package. The runtime stage runs `npm ci --omit=dev --ignore-scripts` from the root and copies in `shared/dist`, `server/dist`, `server/prisma` (schema, migrations, and the seed), the generated Prisma client, and `client/dist`. It runs as a non-root user and listens on `PORT`. |
+| Image | One multi-stage Dockerfile. The build stage runs `npm ci` and `npm run build` from the repository root, because `server` imports the `@cpe334-group/shared` workspace package. The runtime stage runs `npm ci --omit=dev --ignore-scripts --workspace shared --workspace server` from the root and copies in `shared/dist`, `server/dist`, `server/prisma` (schema, migrations, and the seed), and `client/dist`. `--ignore-scripts` skips the Prisma postinstall, so the stage then runs `node node_modules/@prisma/engines/scripts/postinstall.js` and `prisma generate` itself instead of copying the generated client from the build stage. The engines script is an internal Prisma path, and the Prisma 7 upgrade planned for 15 Nov may move it, so the `Docker image` CI job is the check that catches that. It runs as a non-root user and listens on `PORT`. |
 | Cloud Run service | Serves the SPA and `/api` from the one image. Minimum 0 and maximum 3 instances. Public access for the demo and Lab 6. |
 | Cloud SQL | PostgreSQL 16, smallest tier, storage auto-increase off, in the same region as Cloud Run (`asia-southeast1`). Connected through the Cloud Run Cloud SQL connector. |
 | Migrations | A Cloud Run job runs `prisma migrate deploy` and the seed before the service is updated. `prisma` is a runtime dependency for this reason. |
