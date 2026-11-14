@@ -3,7 +3,7 @@ import type { Response } from 'supertest';
 import { createApp, type AppDependencies } from '../../src/app.js';
 import type { Clock } from '../../src/clock.js';
 import { hashPassword } from '../../src/auth/password.js';
-import { checkDatabase, prisma } from '../../src/db.js';
+import { checkDatabase, checkReady, prisma } from '../../src/db.js';
 
 // The origin the E2E client runs on. API tests send no Origin header unless a test sets one.
 export const allowedOrigin = 'http://127.0.0.1:5190';
@@ -36,6 +36,7 @@ export function appDependencies(overrides: Partial<AppDependencies> = {}): AppDe
   return {
     prisma,
     checkDatabase,
+    checkReady,
     clock: fixedClock(),
     allowedOrigins: [allowedOrigin],
     secureCookies: false,
