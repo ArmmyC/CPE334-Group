@@ -82,7 +82,7 @@ Issue: #2
 | NFR-08 | Correct dates at the Bangkok day boundary | F-04 (due date), F-10 (overdue) | 1 | 1, 2 | AC-F04-03 | TEST-F04-03 |
 | NFR-09 | Fresh clone to running app with seed data in at most 6 commands | SR-03 | 1 | Each release | AC-SR03-03 | TEST-SR03-03 |
 | NFR-10 | Data survives restart and redeployment | SR-04 | 1 (local) | 2 (GCP, Lab 5), 3 | AC-SR04-01 | TEST-SR04-01 |
-| NFR-11 | CI on every pull request blocks a failing merge | SR-05 | 2 (Lab 5) | 3 | Sprint 2 contract | Sprint 2 contract |
+| NFR-11 | CI on every pull request blocks a failing merge | SR-05 | 2 (Lab 5) | 3 | AC-SR05-01, AC-SR05-02 | TEST-SR05-01 |
 | NFR-12 | At least 80% line coverage of domain services | SR-06 | 2 | 2 | Sprint 2 contract | Sprint 2 contract |
 | NFR-13 | No real secrets in Git or the client bundle | SR-07 | 1 | Each release | AC-SR07-01 | TEST-SR07-01 |
 | NFR-14 | Catalog and request list within 1 second at p95 on the deployed app | SR-08 | 3 | 3 | Sprint 3 contract | Sprint 3 contract |

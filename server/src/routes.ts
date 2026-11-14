@@ -9,7 +9,7 @@ import { createCopyService } from './copies/service.js';
 import { catalogHandlers } from './catalog/routes.js';
 import { createCatalogService } from './catalog/service.js';
 import type { AppDependencies } from './dependencies.js';
-import { healthHandler } from './health.js';
+import { healthHandler, readyHandler } from './health.js';
 import { loanHandlers } from './loans/routes.js';
 import { createLoanService } from './loans/service.js';
 import { requestHandlers } from './requests/routes.js';
@@ -50,6 +50,12 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       path: '/api/health',
       access: 'public',
       handler: healthHandler(deps.checkDatabase, deps.healthTimeoutMs ?? 2000),
+    },
+    {
+      method: 'get',
+      path: '/api/ready',
+      access: 'public',
+      handler: readyHandler(deps.checkReady, deps.healthTimeoutMs ?? 2000),
     },
     { method: 'post', path: '/api/auth/login', access: 'public', handler: auth.login },
     { method: 'post', path: '/api/auth/logout', access: 'signed-in', handler: auth.logout },

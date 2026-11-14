@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import express from 'express';
 import helmet from 'helmet';
 import { createSessionService } from './auth/sessions.js';
@@ -30,6 +31,17 @@ export function createApp(deps: AppDependencies) {
   }
 
   app.use('/api', notFound);
+
+  if (deps.clientDir) {
+    const clientDir = deps.clientDir;
+    app.use(express.static(clientDir));
+    // A client-side route such as /catalog/4 gets the SPA page. A path with a file extension
+    // that is not on disk stays a 404, so a missing asset is not answered with HTML.
+    app.get(/^\/(?!api(\/|$))[^.]*$/, (_request, response) => {
+      response.sendFile(join(clientDir, 'index.html'));
+    });
+  }
+
   app.use(errorHandler);
 
   return app;
