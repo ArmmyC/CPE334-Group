@@ -250,3 +250,31 @@ describe('TEST-F01-03 logout in the UI (AC-F01-03, FR-02)', () => {
     expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
   });
 });
+
+describe('TEST-F15-07 the lockout message in the UI (AC-F15-07, NFR-06)', () => {
+  it('shows the 429 message and keeps the form usable', async () => {
+    stubApi({
+      'GET /api/auth/me': unauthenticated,
+      'POST /api/auth/login': () =>
+        json(
+          {
+            error: {
+              code: 'TOO_MANY_ATTEMPTS',
+              message: 'Too many failed attempts. Try again in a few minutes.',
+            },
+          },
+          429,
+        ),
+    });
+    renderApp('/login');
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'borrower1@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'correct-password-1');
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Too many failed attempts. Try again in a few minutes.',
+    );
+    expect(screen.getByRole('button', { name: 'Log in' })).toBeEnabled();
+  });
+});
