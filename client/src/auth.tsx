@@ -71,6 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  // NG-F02: a page restored from the back/forward cache keeps its old React state, so ask the
+  // server again. A dead session then signs the user out and the signed-in view disappears.
+  useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) recheck();
+    }
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [recheck]);
+
   return (
     <AuthContext.Provider value={{ state, signIn, signOut, retry, recheck }}>
       {children}
