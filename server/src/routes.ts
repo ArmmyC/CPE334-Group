@@ -78,6 +78,12 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       handler: loans.listForCustodian,
     },
     {
+      method: 'post',
+      path: '/api/custodian/loans/:id/return',
+      access: 'CUSTODIAN',
+      handler: loans.returnLoan,
+    },
+    {
       method: 'get',
       path: '/api/custodian/requests',
       access: 'CUSTODIAN',
