@@ -8,6 +8,25 @@ import { errorHandler, notFound } from './http/errors.js';
 import { originCheck } from './http/origin-check.js';
 import { buildRoutes } from './routes.js';
 
+// NG-F02: the browser must not store signed-in content (API data or the SPA shell), or Back
+// after Logout shows the previous user's pages from cache or the back/forward cache.
+function noStore(
+  _request: express.Request,
+  response: express.Response,
+  next: express.NextFunction,
+) {
+  setNoStore(response);
+  next();
+}
+
+function setNoStore(response: express.Response) {
+  response.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+    Pragma: 'no-cache',
+    Expires: '0',
+  });
+}
+
 export type { AppDependencies } from './dependencies.js';
 
 // Request flow from SDS 2.3: helmet and the JSON limit, the Origin check, the route's
@@ -18,6 +37,7 @@ export function createApp(deps: AppDependencies) {
 
   app.use(helmet());
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api', noStore);
   app.use('/api', originCheck(deps.allowedOrigins));
 
   for (const route of buildRoutes(deps)) {
@@ -34,10 +54,18 @@ export function createApp(deps: AppDependencies) {
 
   if (deps.clientDir) {
     const clientDir = deps.clientDir;
-    app.use(express.static(clientDir));
+    // Hashed files under /assets stay cacheable; the HTML shell never is.
+    app.use(
+      express.static(clientDir, {
+        setHeaders: (response, path) => {
+          if (path.endsWith('.html')) setNoStore(response);
+        },
+      }),
+    );
     // A client-side route such as /catalog/4 gets the SPA page. A path with a file extension
     // that is not on disk stays a 404, so a missing asset is not answered with HTML.
     app.get(/^\/(?!api(\/|$))[^.]*$/, (_request, response) => {
+      setNoStore(response);
       response.sendFile(join(clientDir, 'index.html'));
     });
   }

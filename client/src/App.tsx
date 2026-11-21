@@ -62,7 +62,7 @@ function Header() {
             </div>
           )}
           {state.status === 'signed-in' && (
-            <div className="d-flex align-items-center gap-2 text-white">
+            <div className="d-flex align-items-center gap-2 ms-3 text-white">
               {state.user.role === 'BORROWER' && (
                 <Link className="text-white me-2" to="/my">
                   My requests
