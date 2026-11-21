@@ -23,8 +23,8 @@ A custodian rejects a Pending request in an assigned lab with a required reason.
 
 | Component | File | Responsibility |
 | --- | --- | --- |
-| Request service | `server/src/requests/service.ts` | `rejectRequest`: conditional update `PENDING` to `REJECTED`, sets `decided_at`, `decided_by_id`, `rejection_reason`, and writes history in the same transaction. |
-| Routes | `server/src/requests/routes.ts` | `POST /api/custodian/requests/:id/reject`. |
+| Checkout service | `server/src/checkout/service.ts` | `reject`: conditional update `PENDING` to `REJECTED`, sets `decided_at`, `decided_by_id`, `rejection_reason`, and writes history in the same transaction. |
+| Routes | `server/src/checkout/routes.ts` | `POST /api/custodian/requests/:id/reject`. |
 | Shared schemas | `shared/src/requests.ts` | `rejectRequestBodySchema`: `{ reason: string 1..500 }`. `rejectionReason` is added to the borrower's request item. |
 | Migration | `server/prisma/migrations/<new>` | Adds `borrow_request.rejection_reason varchar(500)`, nullable. |
 | UI | `client/src/PendingRequestsPage.tsx`, `MyRequestsPage.tsx` | A "Reject" button and dialog. The reason is shown on the borrower's rejected row. |

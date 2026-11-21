@@ -1,4 +1,5 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
+import { HttpError } from '../http/errors.js';
 
 // F-15 (NFR-06, SDS 7.3): after MAX_FAILURES failed logins for one email inside WINDOW_MS, every
 // login for that email is refused until the count falls below the limit again.
@@ -9,7 +10,7 @@ export const WINDOW_MS = 15 * 60 * 1000;
 // after the last success count, so a success resets the count. The window slides: the lock ends
 // when the oldest failure that keeps the count at the limit is 15 minutes old.
 export async function loginLockSeconds(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   email: string,
   now: Date,
 ): Promise<number | null> {
@@ -34,13 +35,45 @@ export async function loginLockSeconds(
   return Math.max(1, Math.ceil((unlocksAt - now.getTime()) / 1000));
 }
 
-// Records one attempt that reached the password check. Refused attempts are never recorded, so
-// they do not extend the window.
-export async function recordLoginAttempt(
+// Checks the lock and records the attempt as a failure in one short transaction, under an advisory
+// lock for the email. Parallel attempts for one email therefore see each other's rows, so a burst
+// cannot get past the limit together. The password is checked after this returns, outside the
+// transaction, so no connection is held during hashing. A locked attempt throws 429 and records
+// nothing, so refused attempts do not extend the window.
+export async function beginLoginAttempt(
   prisma: PrismaClient,
   email: string,
-  succeeded: boolean,
+  now: Date,
+): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+    const lockSeconds = await loginLockSeconds(tx, email, now);
+    if (lockSeconds !== null) {
+      throw new HttpError(
+        429,
+        'TOO_MANY_ATTEMPTS',
+        'Too many failed attempts. Try again in a few minutes.',
+        undefined,
+        { 'Retry-After': String(lockSeconds) },
+      );
+    }
+    const attempt = await tx.loginAttempt.create({
+      data: { email, attemptedAt: now, succeeded: false },
+      select: { id: true },
+    });
+    return attempt.id;
+  });
+}
+
+// The password matched: the attempt recorded by beginLoginAttempt becomes a success, which resets
+// the count (NFR-06).
+export async function markLoginSucceeded(
+  prisma: PrismaClient,
+  attemptId: number,
   now: Date,
 ): Promise<void> {
-  await prisma.loginAttempt.create({ data: { email, attemptedAt: now, succeeded } });
+  await prisma.loginAttempt.update({
+    where: { id: attemptId },
+    data: { succeeded: true, attemptedAt: now },
+  });
 }

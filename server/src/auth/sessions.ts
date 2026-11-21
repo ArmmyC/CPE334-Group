@@ -3,7 +3,7 @@ import type { PrismaClient, User } from '@prisma/client';
 import type { CurrentUser } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
-import { loginLockSeconds, recordLoginAttempt } from './login-limit.js';
+import { beginLoginAttempt, markLoginSucceeded } from './login-limit.js';
 import { getDummyHash, verifyPassword } from './password.js';
 
 // Session lifecycle from SDS 7.2 (NFR-04).
@@ -38,31 +38,20 @@ export function createSessionService({ prisma, clock }: { prisma: PrismaClient; 
       previousToken?: string,
     ): Promise<{ token: string; user: CurrentUser }> {
       const normalizedEmail = email.toLowerCase();
-      // F-15: a locked email is refused before the password is checked and before anything is
-      // recorded, so refused attempts do not extend the window (NFR-06).
-      const lockSeconds = await loginLockSeconds(prisma, normalizedEmail, clock.now());
-      if (lockSeconds !== null) {
-        throw new HttpError(
-          429,
-          'TOO_MANY_ATTEMPTS',
-          'Too many failed attempts. Try again in a few minutes.',
-          undefined,
-          { 'Retry-After': String(lockSeconds) },
-        );
-      }
+      // F-15: the lock check and the failure record are one atomic step (NFR-06). It throws 429
+      // for a locked email before the password is checked.
+      const attemptId = await beginLoginAttempt(prisma, normalizedEmail, clock.now());
       const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (!user) {
         await verifyPassword(password, await getDummyHash());
-        await recordLoginAttempt(prisma, normalizedEmail, false, clock.now());
         throw invalidCredentials();
       }
       if (!(await verifyPassword(password, user.passwordHash))) {
-        await recordLoginAttempt(prisma, normalizedEmail, false, clock.now());
         throw invalidCredentials();
       }
 
       const now = clock.now();
-      await recordLoginAttempt(prisma, normalizedEmail, true, now);
+      await markLoginSucceeded(prisma, attemptId, now);
       await prisma.session.deleteMany({
         where: {
           userId: user.id,

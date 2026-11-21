@@ -23,8 +23,8 @@ After 10 failed logins for one email within 15 minutes, every login for that ema
 
 | Component | File | Responsibility |
 | --- | --- | --- |
-| Rate limit | `server/src/auth/login-limit.ts` (new) | `checkLoginLimit(prisma, email, now)`: counts failed attempts and returns the seconds until the lock ends, or null. `recordLoginAttempt(prisma, email, succeeded, now)`. |
-| Session service | `server/src/auth/sessions.ts` | `logIn` checks the limit first, records each attempt that reaches the password check, and never records a refused attempt. |
+| Rate limit | `server/src/auth/login-limit.ts` (new) | `loginLockSeconds(tx, email, now)`: counts failed attempts and returns the seconds until the lock ends, or null. `beginLoginAttempt(prisma, email, now)`: under an advisory lock for the email, checks the lock (429) and records the attempt as a failure. `markLoginSucceeded(prisma, attemptId, now)`. |
+| Session service | `server/src/auth/sessions.ts` | `logIn` calls `beginLoginAttempt` first, then checks the password, then marks the attempt as a success. A refused attempt is never recorded. |
 | Error | `server/src/http/errors.ts` | The 429 response uses the shared error shape with code `TOO_MANY_ATTEMPTS` and a `Retry-After` header in seconds. |
 | Migration | `server/prisma/migrations/<new>` | Adds table `login_attempt` (`id`, `email`, `attempted_at`, `succeeded`) and an index on (`email`, `attempted_at`) (SDS 3.2). |
 
@@ -36,7 +36,7 @@ After 10 failed logins for one email within 15 minutes, every login for that ema
 - A locked login returns 429 before the password is checked and before anything is recorded, so refused attempts do not extend the window.
 - A successful login records `succeeded = true`. Failures before it no longer count.
 - The time comes from the injected clock (SDS 8).
-- Known limit: attempts that arrive in parallel can pass the check together, so a few more than 10 can reach the password check. The lock holds from the next attempt. This is accepted for this size and is not tested.
+- The check and the failure record are one transaction under `pg_advisory_xact_lock(hashtext(email))`, taken before the password is checked. A burst of parallel attempts for one email therefore gets exactly 10 through to the password check. The success update happens after the password check, outside that transaction.
 
 ### 1.4 Data
 
