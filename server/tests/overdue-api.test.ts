@@ -133,13 +133,17 @@ describe('TEST-F10-03 the custodian list carries overdue and filters on it (AC-F
       dueDate: '2026-11-10',
       assetTag: 'EDGE',
     });
-    const cookie = await signIn(app, custodian);
 
-    // 23:59 Bangkok on the due date, then 00:00 on the next day.
+    // 23:59 Bangkok on the due date, then 00:00 on the next day. A fresh sign-in at each time
+    // keeps the session valid, because the session lifetime also follows the injected clock.
     clock.set(new Date('2026-11-10T16:59:00.000Z'));
-    const before = await request(app).get('/api/custodian/loans').set('Cookie', cookie);
+    const before = await request(app)
+      .get('/api/custodian/loans')
+      .set('Cookie', await signIn(app, custodian));
     clock.set(new Date('2026-11-10T17:00:00.000Z'));
-    const after = await request(app).get('/api/custodian/loans').set('Cookie', cookie);
+    const after = await request(app)
+      .get('/api/custodian/loans')
+      .set('Cookie', await signIn(app, custodian));
 
     expect(before.body.items[0].overdue).toBe(false);
     expect(after.body.items[0].overdue).toBe(true);
