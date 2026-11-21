@@ -22,6 +22,7 @@ import {
   type CreateRequest,
   type CatalogResponse,
   type ChangeableCopyStatus,
+  type CreateCopyBody,
   type CurrentUser,
   type CustodianEquipmentType,
   type CustodianEquipmentTypesResponse,
@@ -242,4 +243,13 @@ export async function updateEquipmentType(
     body: JSON.stringify(body),
   });
   return custodianEquipmentTypeSchema.parse(await response.json());
+}
+
+// F-13: add a copy to an equipment type in the custodian's labs.
+export async function createCopy(body: CreateCopyBody): Promise<CustodianCopy> {
+  const response = await send('/api/custodian/copies', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return custodianCopySchema.parse(await response.json());
 }

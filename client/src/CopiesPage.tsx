@@ -1,20 +1,166 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
   COPY_STATUS_LABEL,
+  createCopyBodySchema,
   type ChangeableCopyStatus,
   type CustodianCopy,
 } from '@cpe334-group/shared';
-import { ApiRequestError, changeCopyStatus, fetchCustodianCopies } from './api';
+import {
+  ApiRequestError,
+  changeCopyStatus,
+  createCopy,
+  fetchCustodianCopies,
+  fetchCustodianEquipmentTypes,
+} from './api';
 import { useAuth } from './auth';
 import { errorMessage, useLoad } from './useLoad';
 
 type Confirming = { copyId: number; target: ChangeableCopyStatus };
 
-// The switch a custodian can make from each status (F-06). On loan and Retired have none.
-const SWITCH_TO: Partial<Record<CustodianCopy['status'], ChangeableCopyStatus>> = {
-  AVAILABLE: 'IN_MAINTENANCE',
-  IN_MAINTENANCE: 'AVAILABLE',
+// The changes a custodian can make from each status (F-06 switch, F-13 retire). On loan and
+// Retired have none.
+const ACTIONS: Partial<Record<CustodianCopy['status'], ChangeableCopyStatus[]>> = {
+  AVAILABLE: ['IN_MAINTENANCE', 'RETIRED'],
+  IN_MAINTENANCE: ['AVAILABLE', 'RETIRED'],
 };
+
+const actionLabel = (target: ChangeableCopyStatus) =>
+  target === 'RETIRED' ? 'Retire' : `Set ${COPY_STATUS_LABEL[target]}`;
+
+type AddErrors = { equipmentTypeId?: string; assetTag?: string };
+
+// F-13: the form to add a copy. It loads the custodian's equipment types when it opens.
+function AddCopyForm({
+  onAdded,
+  onClose,
+}: {
+  onAdded: (copy: CustodianCopy) => void;
+  onClose: () => void;
+}) {
+  const { recheck } = useAuth();
+  const { state: load, reload } = useLoad(
+    fetchCustodianEquipmentTypes,
+    'custodian-equipment-types',
+  );
+  const [typeId, setTypeId] = useState('');
+  const [assetTag, setAssetTag] = useState('');
+  const [errors, setErrors] = useState<AddErrors>({});
+  const [message, setMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    const parsed = createCopyBodySchema.safeParse({
+      equipmentTypeId: typeId === '' ? undefined : Number(typeId),
+      assetTag,
+    });
+    if (!parsed.success) {
+      const found: AddErrors = {};
+      for (const issue of parsed.error.issues) {
+        found[String(issue.path[0]) as keyof AddErrors] ??= issue.message;
+      }
+      setErrors(found);
+      return;
+    }
+    setErrors({});
+    setSaving(true);
+    try {
+      onAdded(await createCopy(parsed.data));
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        recheck();
+      } else if (error instanceof ApiRequestError && Object.keys(error.fields).length > 0) {
+        setErrors(error.fields);
+      } else {
+        setMessage(
+          error instanceof ApiRequestError ? error.message : 'Could not reach the server.',
+        );
+      }
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(event) => void save(event)}
+      noValidate
+      className="mb-4"
+      style={{ maxWidth: '32rem' }}
+    >
+      <h2 className="h5">Add copy</h2>
+      {load.status === 'loading' && <p className="text-body-secondary">Loading...</p>}
+      {load.status === 'error' && (
+        <div className="alert alert-warning d-flex align-items-center gap-3">
+          <span>{errorMessage(load.error, 'Could not load equipment types.')}</span>
+          <button type="button" className="btn btn-outline-dark btn-sm" onClick={() => reload()}>
+            Retry
+          </button>
+        </div>
+      )}
+      {message && (
+        <div role="alert" className="alert alert-danger">
+          {message}
+        </div>
+      )}
+      {load.status === 'ready' && (
+        <>
+          <div className="mb-3">
+            <label htmlFor="add-copy-type" className="form-label">
+              Equipment type
+            </label>
+            <select
+              id="add-copy-type"
+              className={`form-select${errors.equipmentTypeId ? ' is-invalid' : ''}`}
+              value={typeId}
+              disabled={saving}
+              aria-invalid={Boolean(errors.equipmentTypeId)}
+              onChange={(event) => setTypeId(event.target.value)}
+            >
+              <option value="">Choose an equipment type</option>
+              {load.data.items.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {`${type.name} (${type.lab.name})`}
+                </option>
+              ))}
+            </select>
+            {errors.equipmentTypeId && (
+              <div className="invalid-feedback d-block">{errors.equipmentTypeId}</div>
+            )}
+          </div>
+          <div className="mb-3">
+            <label htmlFor="add-copy-tag" className="form-label">
+              Asset tag
+            </label>
+            <input
+              id="add-copy-tag"
+              type="text"
+              className={`form-control${errors.assetTag ? ' is-invalid' : ''}`}
+              value={assetTag}
+              disabled={saving}
+              aria-invalid={Boolean(errors.assetTag)}
+              onChange={(event) => setAssetTag(event.target.value)}
+            />
+            {errors.assetTag && <div className="invalid-feedback d-block">{errors.assetTag}</div>}
+          </div>
+          <div className="d-flex gap-2">
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Save copy'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              disabled={saving}
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
+        </>
+      )}
+    </form>
+  );
+}
 
 // F-06: the copies in the custodian's labs, with a confirmed switch between Available and
 // In maintenance. The API decides what is allowed, and the UI only shows its answer.
@@ -26,6 +172,7 @@ export function CopiesPage() {
   const [fieldError, setFieldError] = useState<{ copyId: number; message: string } | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   function clearMessages() {
     setFieldError(null);
@@ -65,6 +212,30 @@ export function CopiesPage() {
   return (
     <section>
       <h1 className="h3">Copies</h1>
+      <div className="mb-3">
+        {!adding && (
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            onClick={() => {
+              clearMessages();
+              setAdding(true);
+            }}
+          >
+            Add copy
+          </button>
+        )}
+        {adding && (
+          <AddCopyForm
+            onClose={() => setAdding(false)}
+            onAdded={(added) => {
+              setAdding(false);
+              setSuccess(`Added ${added.assetTag}.`);
+              refresh();
+            }}
+          />
+        )}
+      </div>
       {refusal && (
         <div className="alert alert-danger" role="alert">
           {refusal}
@@ -101,7 +272,7 @@ export function CopiesPage() {
             </thead>
             <tbody>
               {load.data.map((copy) => {
-                const target = SWITCH_TO[copy.status];
+                const targets = ACTIONS[copy.status];
                 const asking = confirming?.copyId === copy.id ? confirming : null;
                 const errorId = `copy-${copy.id}-error`;
                 const hasError = fieldError?.copyId === copy.id;
@@ -112,22 +283,31 @@ export function CopiesPage() {
                     <td>{copy.assetTag}</td>
                     <td>{COPY_STATUS_LABEL[copy.status]}</td>
                     <td>
-                      {!target && <span className="text-body-secondary">Cannot change</span>}
-                      {target && !asking && (
-                        <button
-                          type="button"
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => {
-                            clearMessages();
-                            setConfirming({ copyId: copy.id, target });
-                          }}
-                        >
-                          {`Set ${COPY_STATUS_LABEL[target]}`}
-                        </button>
+                      {!targets && <span className="text-body-secondary">Cannot change</span>}
+                      {targets && !asking && (
+                        <div className="d-flex flex-wrap gap-2">
+                          {targets.map((target) => (
+                            <button
+                              key={target}
+                              type="button"
+                              className={`btn btn-sm ${target === 'RETIRED' ? 'btn-outline-danger' : 'btn-outline-primary'}`}
+                              onClick={() => {
+                                clearMessages();
+                                setConfirming({ copyId: copy.id, target });
+                              }}
+                            >
+                              {actionLabel(target)}
+                            </button>
+                          ))}
+                        </div>
                       )}
                       {asking && (
                         <div className="d-flex flex-wrap align-items-center gap-2">
-                          <span>{`Change ${copy.assetTag} to ${COPY_STATUS_LABEL[asking.target]}?`}</span>
+                          <span>
+                            {asking.target === 'RETIRED'
+                              ? `Retire ${copy.assetTag}? This cannot be undone.`
+                              : `Change ${copy.assetTag} to ${COPY_STATUS_LABEL[asking.target]}?`}
+                          </span>
                           <button
                             type="button"
                             className="btn btn-primary btn-sm"
