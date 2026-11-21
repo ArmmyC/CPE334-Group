@@ -8,6 +8,7 @@ export class HttpError extends Error {
     readonly code: string,
     message: string,
     readonly fields?: Record<string, string>,
+    readonly headers?: Record<string, string>,
   ) {
     super(message);
     this.name = 'HttpError';
@@ -31,6 +32,9 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, nex
     return;
   }
   if (error instanceof HttpError) {
+    if (error.headers) {
+      response.set(error.headers);
+    }
     response.status(error.status).json(apiError(error.code, error.message, error.fields));
     return;
   }
