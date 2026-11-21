@@ -248,6 +248,8 @@ describe('TEST-F14-05 access (AC-F14-06, SR-01)', () => {
   });
 });
 
+// Entries written in one transaction share a time, so they are ordered by id: the last one written
+// (the loan, after the copy) comes first.
 describe('TEST-F14-06 a real flow shows up in order (AC-F14-01)', () => {
   it('lists the entries of a request, checkout, and return with the custodian as actor', async () => {
     const { app, clock, custodian, borrower, typeA, cookie } = await setUp();
@@ -284,8 +286,8 @@ describe('TEST-F14-06 a real flow shows up in order (AC-F14-01)', () => {
     expect(changes).toEqual([
       ['COPY', 'ON_LOAN', 'AVAILABLE', custodian.id],
       ['LOAN', 'ACTIVE', 'RETURNED', custodian.id],
-      ['COPY', 'AVAILABLE', 'ON_LOAN', custodian.id],
       ['LOAN', null, 'ACTIVE', custodian.id],
+      ['COPY', 'AVAILABLE', 'ON_LOAN', custodian.id],
       ['REQUEST', 'PENDING', 'FULFILLED', custodian.id],
       ['REQUEST', null, 'PENDING', borrower.id],
     ]);

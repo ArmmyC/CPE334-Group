@@ -11,6 +11,8 @@ import { createEquipmentTypeService } from './equipment-types/service.js';
 import { catalogHandlers } from './catalog/routes.js';
 import { createCatalogService } from './catalog/service.js';
 import type { AppDependencies } from './dependencies.js';
+import { historyViewHandlers } from './history/routes.js';
+import { createHistoryViewService } from './history/view.js';
 import { healthHandler, readyHandler } from './health.js';
 import { loanHandlers } from './loans/routes.js';
 import { createLoanService } from './loans/service.js';
@@ -47,6 +49,9 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
 
   const copies = copyHandlers({ copies: createCopyService(deps) });
   const catalog = catalogHandlers({ catalog: createCatalogService(deps) });
+  const history = historyViewHandlers({
+    history: createHistoryViewService({ prisma: deps.prisma }),
+  });
   const equipmentTypes = equipmentTypeHandlers({
     types: createEquipmentTypeService({ prisma: deps.prisma }),
   });
@@ -138,6 +143,7 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       access: 'CUSTODIAN',
       handler: equipmentTypes.update,
     },
+    { method: 'get', path: '/api/custodian/history', access: 'CUSTODIAN', handler: history.list },
     { method: 'get', path: '/api/equipment-types', access: 'BORROWER', handler: catalog.list },
     {
       method: 'get',
