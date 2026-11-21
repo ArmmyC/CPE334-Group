@@ -7,6 +7,8 @@ import {
   currentUserSchema,
   custodianCopiesResponseSchema,
   custodianCopySchema,
+  custodianEquipmentTypeSchema,
+  custodianEquipmentTypesResponseSchema,
   custodianLoansResponseSchema,
   equipmentTypeDetailSchema,
   healthResponseSchema,
@@ -21,6 +23,10 @@ import {
   type CatalogResponse,
   type ChangeableCopyStatus,
   type CurrentUser,
+  type CustodianEquipmentType,
+  type CustodianEquipmentTypesResponse,
+  type EquipmentTypeCreateBody,
+  type EquipmentTypeEditBody,
   type CustodianCopy,
   type CustodianLoan,
   type EquipmentTypeDetail,
@@ -209,4 +215,31 @@ export async function fetchCatalog(): Promise<CatalogResponse> {
 export async function fetchEquipmentType(id: string): Promise<EquipmentTypeDetail> {
   const response = await send(`/api/equipment-types/${encodeURIComponent(id)}`, { method: 'GET' });
   return equipmentTypeDetailSchema.parse(await response.json());
+}
+
+// F-12 equipment type management (SDS 5.2).
+export async function fetchCustodianEquipmentTypes(): Promise<CustodianEquipmentTypesResponse> {
+  const response = await send('/api/custodian/equipment-types', { method: 'GET' });
+  return custodianEquipmentTypesResponseSchema.parse(await response.json());
+}
+
+export async function createEquipmentType(
+  body: EquipmentTypeCreateBody,
+): Promise<CustodianEquipmentType> {
+  const response = await send('/api/custodian/equipment-types', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return custodianEquipmentTypeSchema.parse(await response.json());
+}
+
+export async function updateEquipmentType(
+  id: number,
+  body: EquipmentTypeEditBody,
+): Promise<CustodianEquipmentType> {
+  const response = await send(`/api/custodian/equipment-types/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+  return custodianEquipmentTypeSchema.parse(await response.json());
 }

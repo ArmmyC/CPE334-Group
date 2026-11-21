@@ -6,6 +6,7 @@ import { AuthProvider, ROLE_LABEL, homePath, useAuth } from './auth';
 import { CatalogPage } from './CatalogPage';
 import { EquipmentDetailPage } from './EquipmentDetailPage';
 import { CopiesPage } from './CopiesPage';
+import { EquipmentTypesPage } from './EquipmentTypesPage';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
 import { PendingRequestsPage } from './PendingRequestsPage';
@@ -58,6 +59,9 @@ function Header() {
               </Link>
               <Link className="nav-link text-white" to="/custodian/copies">
                 Copies
+              </Link>
+              <Link className="nav-link text-white" to="/custodian/equipment-types">
+                Equipment types
               </Link>
             </div>
           )}
@@ -161,6 +165,14 @@ function Content() {
         element={
           <RequireRole role="CUSTODIAN">
             <CopiesPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/equipment-types"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <EquipmentTypesPage />
           </RequireRole>
         }
       />
