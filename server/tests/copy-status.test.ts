@@ -123,7 +123,7 @@ describe('TEST-F06-01 a custodian switches a copy between Available and In maint
   });
 });
 
-describe('TEST-F06-02 an On loan copy cannot be changed, and On loan and Retired are not targets (AC-F06-02, AC-F07-02)', () => {
+describe('TEST-F06-02 an On loan copy cannot be changed, and On loan is not a target (AC-F06-02, AC-F07-02)', () => {
   it('refuses to change an On loan copy and stores no history entry', async () => {
     const { app, custodian, borrower, typeA } = await setUp();
     const cookie = await signIn(app, custodian);
@@ -145,18 +145,18 @@ describe('TEST-F06-02 an On loan copy cannot be changed, and On loan and Retired
     expect(await prisma.statusHistory.count()).toBe(0);
   });
 
-  it('refuses On loan and Retired as target statuses with a field message', async () => {
+  it('refuses On loan and unknown values as target statuses with a field message', async () => {
     const { app, custodian, typeA } = await setUp();
     const cookie = await signIn(app, custodian);
     const copy = await createCopy(typeA.id);
 
-    for (const status of ['ON_LOAN', 'RETIRED']) {
+    for (const status of ['ON_LOAN', 'LOST']) {
       const response = await patchStatus(app, cookie, copy.id, { status });
 
       expect(response.status).toBe(400);
       expect(apiErrorSchema.parse(response.body).error).toMatchObject({
         code: 'VALIDATION_ERROR',
-        fields: { status: 'Choose Available or In maintenance.' },
+        fields: { status: 'Choose Available, In maintenance, or Retired.' },
       });
     }
     expect((await prisma.copy.findUniqueOrThrow({ where: { id: copy.id } })).status).toBe(
@@ -329,7 +329,7 @@ describe('Supporting check: the switch request', () => {
     expect(response.status).toBe(400);
     expect(apiErrorSchema.parse(response.body).error).toMatchObject({
       code: 'VALIDATION_ERROR',
-      fields: { status: 'Choose Available or In maintenance.' },
+      fields: { status: 'Choose Available, In maintenance, or Retired.' },
     });
     expect(await prisma.statusHistory.count()).toBe(0);
   });
