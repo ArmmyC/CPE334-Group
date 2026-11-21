@@ -117,7 +117,14 @@ export function MyRequestsPage() {
                   <td>{item.equipmentType.name}</td>
                   <td>{item.lab.name}</td>
                   <td>{item.purpose ?? 'None'}</td>
-                  <td>{STATUS_LABEL[item.status] ?? item.status}</td>
+                  <td>
+                    {STATUS_LABEL[item.status] ?? item.status}
+                    {item.status === 'REJECTED' && item.rejectionReason && (
+                      <div className="small text-body-secondary">
+                        Reason: {item.rejectionReason}
+                      </div>
+                    )}
+                  </td>
                   <td>{formatDateTime(item.createdAt)}</td>
                   <td className="text-end">
                     {item.status === 'PENDING' && (
