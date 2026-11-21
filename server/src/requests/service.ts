@@ -3,6 +3,7 @@ import type { BorrowRequest, CreateRequest } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
 import { recordStatusChange } from '../history/service.js';
+import { assertBelowLimitWithPending, assertNoOverdueLoan } from '../loans/limits.js';
 
 // SDS 2.5: the transaction waits up to 5 seconds for a pool connection and runs up to 10.
 const TRANSACTION_OPTIONS = { maxWait: 5000, timeout: 10000 };
@@ -76,6 +77,9 @@ export function createRequestService({ prisma, clock }: { prisma: PrismaClient; 
           if (pending + activeLoans > 0) {
             throw duplicateRequest();
           }
+          // F-11: the overdue block (BR-11) and the limit of 3 (BR-10), under the borrower lock.
+          await assertNoOverdueLoan(tx, borrowerId, clock.now());
+          await assertBelowLimitWithPending(tx, borrowerId);
           const available = await tx.copy.count({
             where: { equipmentTypeId: type.id, status: 'AVAILABLE' },
           });

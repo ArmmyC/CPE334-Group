@@ -10,6 +10,7 @@ import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
 import { recordStatusChange } from '../history/service.js';
 import { dueDateFor } from '../loans/due-date.js';
+import { assertBelowLimitActiveOnly, assertNoOverdueLoan } from '../loans/limits.js';
 
 // SDS 2.5: the transaction waits up to 5 seconds for a pool connection and runs up to 10.
 const TRANSACTION_OPTIONS = { maxWait: 5000, timeout: 10000 };
@@ -154,6 +155,11 @@ export function createCheckoutService({ prisma, clock }: { prisma: PrismaClient;
           if (fulfilled.count === 0) {
             throw invalidStatus();
           }
+
+          // F-11: the borrower's overdue block (BR-11) and limit of 3 active loans (BR-10). A
+          // refusal rolls the request update back, so the request stays Pending.
+          await assertNoOverdueLoan(tx, found.borrowerId, now);
+          await assertBelowLimitActiveOnly(tx, found.borrowerId);
 
           // Step 3: the copy within the custodian's labs, of the request's type and lab (BR-02).
           const copy = await tx.copy.findFirst({
