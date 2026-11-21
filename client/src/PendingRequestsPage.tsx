@@ -210,6 +210,8 @@ export function PendingRequestsPage() {
     setSuccess(
       `Checked out ${result.assetTag} to ${request.borrower.name}. Due ${result.dueDate}.`,
     );
+    // The request is no longer Pending, so drop its row now; the reload below confirms the list.
+    setItems((current) => (current ? current.filter((item) => item.id !== request.id) : current));
     setAttempt((count) => count + 1);
   }
 
