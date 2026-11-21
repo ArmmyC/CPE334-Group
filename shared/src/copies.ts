@@ -6,10 +6,10 @@ export const copyStatusSchema = z.enum(['AVAILABLE', 'ON_LOAN', 'IN_MAINTENANCE'
 
 export type CopyStatus = z.infer<typeof copyStatusSchema>;
 
-// The statuses a custodian can set in Sprint 1. On loan comes only from checkout (F-04), and
-// Retired is added with F-13 in Sprint 2.
-export const changeableCopyStatusSchema = z.enum(['AVAILABLE', 'IN_MAINTENANCE'], {
-  error: 'Choose Available or In maintenance.',
+// The statuses a custodian can set. On loan comes only from checkout (F-04). Retired comes with
+// F-13 and is final (BR-08).
+export const changeableCopyStatusSchema = z.enum(['AVAILABLE', 'IN_MAINTENANCE', 'RETIRED'], {
+  error: 'Choose Available, In maintenance, or Retired.',
 });
 
 export type ChangeableCopyStatus = z.infer<typeof changeableCopyStatusSchema>;
@@ -17,6 +17,21 @@ export type ChangeableCopyStatus = z.infer<typeof changeableCopyStatusSchema>;
 export const updateCopyStatusRequestSchema = z.object({ status: changeableCopyStatusSchema });
 
 export type UpdateCopyStatusRequest = z.infer<typeof updateCopyStatusRequestSchema>;
+
+// F-13: add a copy. The asset tag is unique across all labs (BR-12).
+export const createCopyBodySchema = z.object({
+  equipmentTypeId: z
+    .number({ error: 'Choose an equipment type.' })
+    .int('Choose an equipment type.')
+    .positive('Choose an equipment type.'),
+  assetTag: z
+    .string({ error: 'Asset tag is required.' })
+    .trim()
+    .min(1, 'Asset tag is required.')
+    .max(50, 'Asset tag must be at most 50 characters.'),
+});
+
+export type CreateCopyBody = z.infer<typeof createCopyBodySchema>;
 
 export const custodianCopySchema = z.object({
   id: z.number().int().positive(),

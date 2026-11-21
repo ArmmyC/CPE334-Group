@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { updateCopyStatusRequestSchema } from '@cpe334-group/shared';
+import { createCopyBodySchema, updateCopyStatusRequestSchema } from '@cpe334-group/shared';
 import { HttpError } from '../http/errors.js';
 import { validateBody } from '../http/validate.js';
 import { notFoundCopy, type createCopyService } from './service.js';
@@ -36,5 +36,10 @@ export function copyHandlers({ copies }: { copies: CopyService }) {
     response.json(await copies.changeStatus(response.locals.user!.id, copyId, status));
   };
 
-  return { list, changeStatus };
+  const create: RequestHandler = async (request, response) => {
+    const body = validateBody(createCopyBodySchema, request.body);
+    response.status(201).json(await copies.create(response.locals.user!.id, body));
+  };
+
+  return { list, changeStatus, create };
 }

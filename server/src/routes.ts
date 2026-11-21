@@ -113,6 +113,7 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       handler: checkout.reject,
     },
     { method: 'get', path: '/api/custodian/copies', access: 'CUSTODIAN', handler: copies.list },
+    { method: 'post', path: '/api/custodian/copies', access: 'CUSTODIAN', handler: copies.create },
     {
       method: 'patch',
       path: '/api/custodian/copies/:id',

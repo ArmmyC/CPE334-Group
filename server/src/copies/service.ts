@@ -1,5 +1,5 @@
-import type { CopyStatus, Prisma, PrismaClient } from '@prisma/client';
-import type { ChangeableCopyStatus, CustodianCopy } from '@cpe334-group/shared';
+import { Prisma, type CopyStatus, type PrismaClient } from '@prisma/client';
+import type { ChangeableCopyStatus, CreateCopyBody, CustodianCopy } from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
 import { recordStatusChange } from '../history/service.js';
@@ -47,11 +47,22 @@ function invalidStatus(current: CopyStatus | undefined, target: ChangeableCopySt
   return new HttpError(409, 'INVALID_STATUS', message);
 }
 
-// BR-08 for Sprint 1: Available and In maintenance switch with each other and nothing else.
-const SWITCHES_FROM: Record<ChangeableCopyStatus, ChangeableCopyStatus> = {
-  AVAILABLE: 'IN_MAINTENANCE',
-  IN_MAINTENANCE: 'AVAILABLE',
+// BR-08: Available and In maintenance switch with each other, and either can be retired.
+// On loan and Retired cannot change here.
+const ALLOWED_FROM: Record<ChangeableCopyStatus, CopyStatus[]> = {
+  AVAILABLE: ['IN_MAINTENANCE'],
+  IN_MAINTENANCE: ['AVAILABLE'],
+  RETIRED: ['AVAILABLE', 'IN_MAINTENANCE'],
 };
+
+const duplicateAssetTag = () =>
+  new HttpError(409, 'DUPLICATE_ASSET_TAG', 'This asset tag is already in use.', {
+    assetTag: 'This asset tag is already in use.',
+  });
+
+// The unique index on the asset tag decides (BR-12), so parallel adds cannot both succeed.
+const isUniqueViolation = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 
 export function createCopyService({ prisma, clock }: { prisma: PrismaClient; clock: Clock }) {
   return {
@@ -79,12 +90,15 @@ export function createCopyService({ prisma, clock }: { prisma: PrismaClient; clo
       return await prisma.$transaction(async (tx) => {
         const scoped = await tx.copy.findFirst({
           where: { id: copyId, ...inAssignedLab(custodianId) },
-          select: { id: true },
+          select: { status: true },
         });
         if (!scoped) {
           throw notFoundCopy();
         }
-        const expected = SWITCHES_FROM[target];
+        const expected = scoped.status;
+        if (!ALLOWED_FROM[target].includes(expected)) {
+          throw invalidStatus(expected, target);
+        }
         const changed = await tx.copy.updateMany({
           where: { id: copyId, status: expected },
           data: { status: target },
@@ -107,6 +121,38 @@ export function createCopyService({ prisma, clock }: { prisma: PrismaClient; clo
           await tx.copy.findUniqueOrThrow({ where: { id: copyId }, select: copySelect }),
         );
       }, TRANSACTION_OPTIONS);
+    },
+
+    // F-13: a new copy starts Available, with its history entry in the same transaction.
+    async create(custodianId: number, body: CreateCopyBody): Promise<CustodianCopy> {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const type = await tx.equipmentType.findFirst({
+            where: { id: body.equipmentTypeId, lab: { assignments: { some: { custodianId } } } },
+            select: { id: true },
+          });
+          if (!type) {
+            throw new HttpError(404, 'NOT_FOUND', 'Equipment type not found.');
+          }
+          const created = await tx.copy.create({
+            data: { equipmentTypeId: type.id, assetTag: body.assetTag, status: 'AVAILABLE' },
+            select: { id: true },
+          });
+          await recordStatusChange(tx, clock, {
+            entityType: 'COPY',
+            entityId: created.id,
+            actorId: custodianId,
+            oldStatus: null,
+            newStatus: 'AVAILABLE',
+          });
+          return toCustodianCopy(
+            await tx.copy.findUniqueOrThrow({ where: { id: created.id }, select: copySelect }),
+          );
+        }, TRANSACTION_OPTIONS);
+      } catch (error) {
+        if (isUniqueViolation(error)) throw duplicateAssetTag();
+        throw error;
+      }
     },
   };
 }

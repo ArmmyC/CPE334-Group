@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiErrorSchema } from '@cpe334-group/shared';
 import { prisma } from '../src/db.js';
 import { resetDatabase } from './helpers/database.js';
@@ -10,6 +10,9 @@ import {
   logIn,
   testPassword,
 } from './helpers/app.js';
+
+// Each test makes 10 to 40 real password hashes, so under load it can pass the 5 second default.
+vi.setConfig({ testTimeout: 30_000 });
 
 beforeEach(async () => {
   await resetDatabase();
