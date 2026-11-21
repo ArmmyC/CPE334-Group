@@ -12,6 +12,7 @@ import {
   custodianLoansResponseSchema,
   equipmentTypeDetailSchema,
   healthResponseSchema,
+  historyResponseSchema,
   loanSchema,
   pendingRequestListSchema,
   rejectRequestResultSchema,
@@ -32,6 +33,8 @@ import {
   type CustodianLoan,
   type EquipmentTypeDetail,
   type HealthResponse,
+  type HistoryEntityType,
+  type HistoryResponse,
   type Loan,
   type LoginRequest,
   type PendingRequest,
@@ -252,4 +255,18 @@ export async function createCopy(body: CreateCopyBody): Promise<CustodianCopy> {
     body: JSON.stringify(body),
   });
   return custodianCopySchema.parse(await response.json());
+}
+
+// F-14: one page of the history of the custodian's labs, newest first.
+export async function fetchHistory(
+  options: { entityType?: HistoryEntityType; beforeId?: number } = {},
+): Promise<HistoryResponse> {
+  const params = new URLSearchParams();
+  if (options.entityType) params.set('entityType', options.entityType);
+  if (options.beforeId !== undefined) params.set('beforeId', String(options.beforeId));
+  const query = params.toString();
+  const response = await send(`/api/custodian/history${query ? `?${query}` : ''}`, {
+    method: 'GET',
+  });
+  return historyResponseSchema.parse(await response.json());
 }

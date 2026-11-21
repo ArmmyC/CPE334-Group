@@ -7,6 +7,7 @@ import { CatalogPage } from './CatalogPage';
 import { EquipmentDetailPage } from './EquipmentDetailPage';
 import { CopiesPage } from './CopiesPage';
 import { EquipmentTypesPage } from './EquipmentTypesPage';
+import { HistoryPage } from './HistoryPage';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
 import { PendingRequestsPage } from './PendingRequestsPage';
@@ -62,6 +63,9 @@ function Header() {
               </Link>
               <Link className="nav-link text-white" to="/custodian/equipment-types">
                 Equipment types
+              </Link>
+              <Link className="nav-link text-white" to="/custodian/history">
+                History
               </Link>
             </div>
           )}
@@ -173,6 +177,14 @@ function Content() {
         element={
           <RequireRole role="CUSTODIAN">
             <EquipmentTypesPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/history"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <HistoryPage />
           </RequireRole>
         }
       />
