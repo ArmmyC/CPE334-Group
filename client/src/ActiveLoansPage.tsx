@@ -1,15 +1,38 @@
+import { useState } from 'react';
 import { fetchActiveLoans } from './api';
 import { formatDateTime } from './MyRequestsPage';
 import { errorMessage, useLoad } from './useLoad';
 
+// Shown next to a due date that has passed (F-10). The API calculates it, the page only shows it.
+export function OverdueBadge() {
+  return <span className="badge text-bg-danger ms-2">Overdue</span>;
+}
+
 // F-05: the active loans in the custodian's labs, in the order the API sends them (earliest due
 // date first). The API decides which loans are shown, and the page only displays its answer.
+// F-10: the Overdue only box asks the API for overdue loans.
 export function ActiveLoansPage() {
-  const { state, reload } = useLoad(fetchActiveLoans, 'custodian-loans');
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const { state, reload } = useLoad(
+    () => fetchActiveLoans(overdueOnly),
+    overdueOnly ? 'custodian-loans-overdue' : 'custodian-loans',
+  );
 
   return (
     <section>
       <h1 className="h3">Active loans</h1>
+      <div className="form-check mb-3">
+        <input
+          id="overdue-only"
+          type="checkbox"
+          className="form-check-input"
+          checked={overdueOnly}
+          onChange={(event) => setOverdueOnly(event.target.checked)}
+        />
+        <label htmlFor="overdue-only" className="form-check-label">
+          Overdue only
+        </label>
+      </div>
       {state.status === 'loading' && <p className="text-body-secondary">Loading...</p>}
       {state.status === 'error' && (
         <div className="alert alert-warning d-flex align-items-center gap-3">
@@ -20,7 +43,9 @@ export function ActiveLoansPage() {
         </div>
       )}
       {state.status === 'ready' && state.data.length === 0 && (
-        <p className="text-body-secondary">No active loans in your labs.</p>
+        <p className="text-body-secondary">
+          {overdueOnly ? 'No overdue loans in your labs.' : 'No active loans in your labs.'}
+        </p>
       )}
       {state.status === 'ready' && state.data.length > 0 && (
         <div className="table-responsive">
@@ -43,7 +68,10 @@ export function ActiveLoansPage() {
                   <td>{loan.lab.name}</td>
                   <td>{loan.assetTag}</td>
                   <td>{formatDateTime(loan.checkedOutAt)}</td>
-                  <td>{loan.dueDate}</td>
+                  <td>
+                    {loan.dueDate}
+                    {loan.overdue && <OverdueBadge />}
+                  </td>
                 </tr>
               ))}
             </tbody>

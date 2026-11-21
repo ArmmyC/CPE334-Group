@@ -161,9 +161,15 @@ export async function changeCopyStatus(
   return custodianCopySchema.parse(await response.json());
 }
 
-// F-05 active loans in the custodian's labs, earliest due date first (SDS 5.2).
-export async function fetchActiveLoans(): Promise<CustodianLoan[]> {
-  const response = await send('/api/custodian/loans', { method: 'GET' });
+// F-05 active loans in the custodian's labs, earliest due date first (SDS 5.2). F-10 adds the
+// overdue-only filter.
+export async function fetchActiveLoans(overdueOnly = false): Promise<CustodianLoan[]> {
+  const response = await send(
+    overdueOnly ? '/api/custodian/loans?overdue=true' : '/api/custodian/loans',
+    {
+      method: 'GET',
+    },
+  );
   return custodianLoansResponseSchema.parse(await response.json()).items;
 }
 

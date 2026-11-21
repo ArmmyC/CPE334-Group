@@ -43,6 +43,8 @@ export const loanSchema = z.object({
   checkedOutAt: z.string(),
   dueDate: z.string(),
   status: z.enum(['ACTIVE', 'RETURNED']),
+  // F-10: calculated when read from the due date, never stored (BR-09).
+  overdue: z.boolean().default(false),
 });
 
 export type Loan = z.infer<typeof loanSchema>;

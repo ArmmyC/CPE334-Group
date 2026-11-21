@@ -39,7 +39,9 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
   const checkout = checkoutHandlers({
     checkout: createCheckoutService({ prisma: deps.prisma, clock: deps.clock }),
   });
-  const loans = loanHandlers({ loans: createLoanService({ prisma: deps.prisma }) });
+  const loans = loanHandlers({
+    loans: createLoanService({ prisma: deps.prisma, clock: deps.clock }),
+  });
 
   const copies = copyHandlers({ copies: createCopyService(deps) });
   const catalog = catalogHandlers({ catalog: createCatalogService(deps) });

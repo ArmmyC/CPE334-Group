@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { BorrowRequest, Loan } from '@cpe334-group/shared';
+import { OverdueBadge } from './ActiveLoansPage';
 import { ApiRequestError, cancelRequest, fetchMyLoans, fetchMyRequests } from './api';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -159,7 +160,10 @@ export function MyRequestsPage() {
                   <td>{loan.equipmentType.name}</td>
                   <td>{loan.assetTag}</td>
                   <td>{formatDateTime(loan.checkedOutAt)}</td>
-                  <td>{loan.dueDate}</td>
+                  <td>
+                    {loan.dueDate}
+                    {loan.overdue && <OverdueBadge />}
+                  </td>
                   <td>{STATUS_LABEL[loan.status] ?? loan.status}</td>
                 </tr>
               ))}
