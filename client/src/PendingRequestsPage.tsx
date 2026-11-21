@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AvailableCopy, CheckoutResult, PendingRequest } from '@cpe334-group/shared';
-import { ApiRequestError, checkoutCopy, fetchAvailableCopies, fetchPendingRequests } from './api';
+import {
+  rejectRequestBodySchema,
+  type AvailableCopy,
+  type CheckoutResult,
+  type PendingRequest,
+} from '@cpe334-group/shared';
+import {
+  ApiRequestError,
+  checkoutCopy,
+  fetchAvailableCopies,
+  fetchPendingRequests,
+  rejectRequest,
+} from './api';
 import { formatDateTime } from './MyRequestsPage';
 
 type CopiesState =
@@ -181,6 +192,133 @@ function CheckoutDialog({
   );
 }
 
+// The reject dialog (F-08). The reason is required. A 409 or 404 means the list is out of date,
+// so the dialog closes and the page reloads.
+function RejectDialog({
+  request,
+  onClose,
+  onDone,
+  onStale,
+}: {
+  request: PendingRequest;
+  onClose: () => void;
+  onDone: () => void;
+  onStale: (message: string) => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [reasonError, setReasonError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
+
+  async function handleConfirm() {
+    setMessage(null);
+    setReasonError(null);
+    const parsed = rejectRequestBodySchema.safeParse({ reason });
+    if (!parsed.success) {
+      setReasonError(parsed.error.issues[0]?.message ?? 'Enter a reason.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await rejectRequest(request.id, parsed.data);
+      onDone();
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        if (error.status === 409 || error.status === 404) {
+          onStale(
+            error.status === 404 ? 'Request not found.' : 'This request is no longer pending.',
+          );
+          return;
+        }
+        if (error.fields.reason) setReasonError(error.fields.reason);
+        else setMessage(error.message);
+      } else {
+        setMessage('Could not reach the server.');
+      }
+      setSubmitting(false);
+    }
+  }
+
+  const titleId = `reject-title-${request.id}`;
+
+  return (
+    <>
+      <div className="modal-backdrop fade show" />
+      <div
+        ref={dialogRef}
+        className="modal fade show d-block"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && !submitting) onClose();
+        }}
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title h5" id={titleId}>
+                Reject {request.equipmentType.name}
+              </h2>
+            </div>
+            <div className="modal-body">
+              <p className="mb-3">
+                Request from {request.borrower.name} in {request.lab.name}.
+              </p>
+              {message && (
+                <div role="alert" className="alert alert-danger">
+                  {message}
+                </div>
+              )}
+              <label htmlFor="reject-reason" className="form-label">
+                Reason
+              </label>
+              <textarea
+                id="reject-reason"
+                className={`form-control${reasonError ? ' is-invalid' : ''}`}
+                rows={3}
+                value={reason}
+                disabled={submitting}
+                aria-describedby={reasonError ? 'reject-reason-error' : undefined}
+                onChange={(event) => setReason(event.target.value)}
+              />
+              {reasonError && (
+                <div id="reject-reason-error" className="invalid-feedback d-block">
+                  {reasonError}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={submitting}
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={submitting}
+                onClick={() => void handleConfirm()}
+              >
+                {submitting ? 'Rejecting...' : 'Confirm reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // The custodian's Pending requests (F-04). The API returns only the labs the custodian is
 // assigned to, oldest first. The heading shows in every state.
 export function PendingRequestsPage() {
@@ -188,6 +326,8 @@ export function PendingRequestsPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [selected, setSelected] = useState<PendingRequest | null>(null);
+  const [rejecting, setRejecting] = useState<PendingRequest | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -264,10 +404,23 @@ export function PendingRequestsPage() {
                     aria-label={`Check out ${item.equipmentType.name}`}
                     onClick={() => {
                       setSuccess(null);
+                      setNotice(null);
                       setSelected(item);
                     }}
                   >
                     Check out
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm ms-2"
+                    aria-label={`Reject ${item.equipmentType.name}`}
+                    onClick={() => {
+                      setSuccess(null);
+                      setNotice(null);
+                      setRejecting(item);
+                    }}
+                  >
+                    Reject
                   </button>
                 </td>
               </tr>
@@ -286,6 +439,11 @@ export function PendingRequestsPage() {
           {success}
         </div>
       )}
+      {notice && (
+        <div role="status" className="alert alert-warning">
+          {notice}
+        </div>
+      )}
       {loadFailed && items && (
         <div role="alert" className="alert alert-warning">
           Could not refresh the list. It may be out of date.
@@ -297,6 +455,25 @@ export function PendingRequestsPage() {
           request={selected}
           onClose={() => setSelected(null)}
           onDone={(result) => handleDone(selected, result)}
+        />
+      )}
+      {rejecting && (
+        <RejectDialog
+          request={rejecting}
+          onClose={() => setRejecting(null)}
+          onDone={() => {
+            setSuccess(`Rejected the request from ${rejecting.borrower.name}.`);
+            setItems((current) =>
+              current ? current.filter((item) => item.id !== rejecting.id) : current,
+            );
+            setRejecting(null);
+            setAttempt((count) => count + 1);
+          }}
+          onStale={(text) => {
+            setNotice(text);
+            setRejecting(null);
+            setAttempt((count) => count + 1);
+          }}
         />
       )}
     </section>

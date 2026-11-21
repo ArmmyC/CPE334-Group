@@ -12,6 +12,7 @@ import {
   healthResponseSchema,
   loanSchema,
   pendingRequestListSchema,
+  rejectRequestResultSchema,
   type AvailableCopy,
   type BorrowRequest,
   type CheckoutResult,
@@ -26,6 +27,8 @@ import {
   type Loan,
   type LoginRequest,
   type PendingRequest,
+  type RejectRequestBody,
+  type RejectRequestResult,
 } from '@cpe334-group/shared';
 
 // An API error in the shared shape (SDS 5.3), with `fields` for validation errors.
@@ -142,6 +145,18 @@ export async function checkoutCopy(requestId: number, copyId: number): Promise<C
     body: JSON.stringify({ copyId }),
   });
   return checkoutResultSchema.parse(await response.json());
+}
+
+// F-08 reject a Pending request with a reason (SDS 5.2).
+export async function rejectRequest(
+  id: number,
+  body: RejectRequestBody,
+): Promise<RejectRequestResult> {
+  const response = await send(`/api/custodian/requests/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return rejectRequestResultSchema.parse(await response.json());
 }
 
 // F-06 copy maintenance status (SDS 5.2).
