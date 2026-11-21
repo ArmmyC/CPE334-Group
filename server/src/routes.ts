@@ -6,6 +6,8 @@ import { checkoutHandlers } from './checkout/routes.js';
 import { createCheckoutService } from './checkout/service.js';
 import { copyHandlers } from './copies/routes.js';
 import { createCopyService } from './copies/service.js';
+import { equipmentTypeHandlers } from './equipment-types/routes.js';
+import { createEquipmentTypeService } from './equipment-types/service.js';
 import { catalogHandlers } from './catalog/routes.js';
 import { createCatalogService } from './catalog/service.js';
 import type { AppDependencies } from './dependencies.js';
@@ -45,6 +47,9 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
 
   const copies = copyHandlers({ copies: createCopyService(deps) });
   const catalog = catalogHandlers({ catalog: createCatalogService(deps) });
+  const equipmentTypes = equipmentTypeHandlers({
+    types: createEquipmentTypeService({ prisma: deps.prisma }),
+  });
 
   return [
     {
@@ -113,6 +118,24 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       path: '/api/custodian/copies/:id',
       access: 'CUSTODIAN',
       handler: copies.changeStatus,
+    },
+    {
+      method: 'get',
+      path: '/api/custodian/equipment-types',
+      access: 'CUSTODIAN',
+      handler: equipmentTypes.list,
+    },
+    {
+      method: 'post',
+      path: '/api/custodian/equipment-types',
+      access: 'CUSTODIAN',
+      handler: equipmentTypes.create,
+    },
+    {
+      method: 'patch',
+      path: '/api/custodian/equipment-types/:id',
+      access: 'CUSTODIAN',
+      handler: equipmentTypes.update,
     },
     { method: 'get', path: '/api/equipment-types', access: 'BORROWER', handler: catalog.list },
     {

@@ -6,3 +6,4 @@ export * from './requests.js';
 export * from './checkout.js';
 export * from './catalog.js';
 export * from './loans.js';
+export * from './equipment-types.js';
