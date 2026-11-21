@@ -78,7 +78,7 @@ The login form already shows the API message for a failed login. For 429 it show
 
 ## 6. SR rules
 
-SR-02 (error shape). SR-04 does not add anything: the table is created by the migration.
+SR-02 (error shape). SR-03: the table is created by a migration.
 
 ## 7. Definition of Done
 

@@ -80,7 +80,7 @@ A custodian page "Equipment types" lists the types by lab with the loan period, 
 
 ## 6. SR rules
 
-SR-01 (access: three new routes in the route table, checked by the AC-SR01-01 test). SR-02 (error shape). SR-04: no migration.
+SR-01 (access: three new routes in the route table, checked by the AC-SR01-01 test). SR-02 (error shape). SR-03 (no migration: the unique name and the 1 to 30 check already exist).
 
 ## 7. Definition of Done
 
