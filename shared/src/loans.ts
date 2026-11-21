@@ -30,3 +30,30 @@ export type CustodianLoan = z.infer<typeof custodianLoanSchema>;
 export const custodianLoansResponseSchema = z.object({ items: z.array(custodianLoanSchema) });
 
 export type CustodianLoansResponse = z.infer<typeof custodianLoansResponseSchema>;
+
+// F-09 return a loan (SDS 5.2). The note is required, 1 to 500 characters after trimming.
+export const returnNoteMaxLength = 500;
+
+export const returnLoanBodySchema = z.object({
+  note: z
+    .string({ error: 'Enter a note about the condition.' })
+    .trim()
+    .min(1, 'Enter a note about the condition.')
+    .max(returnNoteMaxLength, 'Use a note of at most 500 characters.'),
+  damaged: z.boolean({ error: 'Use true or false.' }).default(false),
+});
+
+export type ReturnLoanBody = z.infer<typeof returnLoanBodySchema>;
+
+export const returnLoanResultSchema = z.object({
+  id: z.number().int(),
+  status: z.literal('RETURNED'),
+  returnedAt: z.string(),
+  copy: z.object({
+    id: z.number().int(),
+    assetTag: z.string(),
+    status: z.enum(['AVAILABLE', 'IN_MAINTENANCE']),
+  }),
+});
+
+export type ReturnLoanResult = z.infer<typeof returnLoanResultSchema>;

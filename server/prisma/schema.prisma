@@ -56,6 +56,7 @@ model User {
   decidedRequests BorrowRequest[] @relation("RequestDecidedBy")
   loans           Loan[]          @relation("LoanBorrower")
   checkedOutLoans Loan[]          @relation("LoanCheckedOutBy")
+  returnedLoans   Loan[]          @relation("LoanReturnedBy")
   historyEntries  StatusHistory[]
 
   @@map("user")
@@ -160,11 +161,16 @@ model Loan {
   // A calendar date in Asia/Bangkok, not a timestamp (SDS section 8).
   dueDate        DateTime   @map("due_date") @db.Date
   status         LoanStatus
+  // F-09: set together when the loan is returned, NULL while Active.
+  returnedAt     DateTime?  @map("returned_at") @db.Timestamptz(3)
+  returnedById   Int?       @map("returned_by_id")
+  returnNote     String?    @map("return_note")
 
   request      BorrowRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
   copy         Copy          @relation(fields: [copyId], references: [id], onDelete: Restrict)
   borrower     User          @relation("LoanBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
   checkedOutBy User          @relation("LoanCheckedOutBy", fields: [checkedOutById], references: [id], onDelete: Restrict)
+  returnedBy   User?         @relation("LoanReturnedBy", fields: [returnedById], references: [id], onDelete: Restrict)
 
   // BR-01: one active loan per copy is a partial unique index in the migration.
   @@index([copyId])

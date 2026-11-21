@@ -12,6 +12,7 @@ Sources: [SRS](../../srs.md) FR-12, BR-07, BR-08; [System-Level SDS](../../syste
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-22 | draft for owner | First contract, written before tests. Not yet reviewed by the teammate. |
+| 0.2 | 2026-11-22 | draft for owner | Dropped the `returned_at` check constraint (existing tests create Returned loans directly). |
 
 ## 1. Feature-Level SDS
 
@@ -44,7 +45,7 @@ A custodian records the return of an active loan in an assigned lab, with a cond
 
 ### 1.5 Data
 
-The migration adds three nullable loan columns. Existing rows keep NULL. A check constraint requires `returned_at` to be set when `status = 'RETURNED'`.
+The migration adds three nullable loan columns and a foreign key from `returned_by_id` to `user`. Existing rows keep NULL. The return service always sets the three columns together; no check constraint is added, because Sprint 1 tests and seed data create Returned loans directly.
 
 ## 2. API specification
 
