@@ -114,6 +114,7 @@ describe('TEST-F05-01 a custodian lists the active loans in assigned labs (AC-F0
           checkedOutAt: '2026-11-03T08:30:00.000Z',
           dueDate: '2026-11-10',
           status: 'ACTIVE',
+          overdue: false,
         },
         {
           id: later.id,
@@ -124,6 +125,7 @@ describe('TEST-F05-01 a custodian lists the active loans in assigned labs (AC-F0
           checkedOutAt: '2026-11-06T03:00:00.000Z',
           dueDate: '2026-11-13',
           status: 'ACTIVE',
+          overdue: false,
         },
       ],
     });
@@ -231,12 +233,12 @@ describe('Supporting checks: F-05 list', () => {
     const { app, custodian } = await setUp();
     const cookie = await signIn(app, custodian);
 
-    const response = await listLoans(app, cookie, '?overdue=true');
+    const response = await listLoans(app, cookie, '?lab=1');
 
     expect(response.status).toBe(400);
     expect(apiErrorSchema.parse(response.body).error).toMatchObject({
       code: 'VALIDATION_ERROR',
-      fields: { overdue: 'Unknown parameter.' },
+      fields: { lab: 'Unknown parameter.' },
     });
   });
 
