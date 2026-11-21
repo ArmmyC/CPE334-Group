@@ -139,6 +139,8 @@ model BorrowRequest {
   createdAt       DateTime      @map("created_at") @db.Timestamptz(3)
   decidedAt       DateTime?     @map("decided_at") @db.Timestamptz(3)
   decidedById     Int?          @map("decided_by_id")
+  // F-08: set only when the request is Rejected.
+  rejectionReason String?       @map("rejection_reason") @db.VarChar(500)
 
   borrower      User          @relation("RequestBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
   equipmentType EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)

@@ -32,6 +32,8 @@ export const borrowRequestSchema = z.object({
   status: requestStatusSchema,
   createdAt: z.string(),
   decidedAt: z.string().nullable(),
+  // F-08: the custodian's reason, null unless the request is Rejected.
+  rejectionReason: z.string().nullable().default(null),
 });
 
 export type BorrowRequest = z.infer<typeof borrowRequestSchema>;
@@ -48,3 +50,25 @@ export const loanSchema = z.object({
 });
 
 export type Loan = z.infer<typeof loanSchema>;
+
+// F-08 reject a request (SDS 5.2). The reason is required, 1 to 500 characters after trimming.
+export const rejectionReasonMaxLength = 500;
+
+export const rejectRequestBodySchema = z.object({
+  reason: z
+    .string({ error: 'Enter a reason.' })
+    .trim()
+    .min(1, 'Enter a reason.')
+    .max(rejectionReasonMaxLength, 'Use a reason of at most 500 characters.'),
+});
+
+export type RejectRequestBody = z.infer<typeof rejectRequestBodySchema>;
+
+export const rejectRequestResultSchema = z.object({
+  id: z.number().int(),
+  status: z.literal('REJECTED'),
+  rejectionReason: z.string(),
+  decidedAt: z.string(),
+});
+
+export type RejectRequestResult = z.infer<typeof rejectRequestResultSchema>;
