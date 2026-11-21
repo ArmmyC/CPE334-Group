@@ -45,7 +45,7 @@ export function createCopy(equipmentTypeId: number, assetTag = `TAG-${next()}`) 
 export function createRequest(
   borrowerId: number,
   equipmentTypeId: number,
-  status: 'PENDING' | 'FULFILLED' | 'CANCELLED' = 'PENDING',
+  status: 'PENDING' | 'FULFILLED' | 'CANCELLED' | 'REJECTED' = 'PENDING',
 ) {
   return prisma.borrowRequest.create({
     data: { borrowerId, equipmentTypeId, status, createdAt: fixtureTime },
