@@ -12,6 +12,7 @@ import {
   healthResponseSchema,
   loanSchema,
   pendingRequestListSchema,
+  returnLoanResultSchema,
   type AvailableCopy,
   type BorrowRequest,
   type CheckoutResult,
@@ -26,6 +27,8 @@ import {
   type Loan,
   type LoginRequest,
   type PendingRequest,
+  type ReturnLoanBody,
+  type ReturnLoanResult,
 } from '@cpe334-group/shared';
 
 // An API error in the shared shape (SDS 5.3), with `fields` for validation errors.
@@ -171,6 +174,15 @@ export async function fetchActiveLoans(overdueOnly = false): Promise<CustodianLo
     },
   );
   return custodianLoansResponseSchema.parse(await response.json()).items;
+}
+
+// F-09 return a loan with a condition note (SDS 5.2).
+export async function returnLoan(id: number, body: ReturnLoanBody): Promise<ReturnLoanResult> {
+  const response = await send(`/api/custodian/loans/${id}/return`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return returnLoanResultSchema.parse(await response.json());
 }
 
 // F-02 catalog reads.
