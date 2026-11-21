@@ -1,5 +1,11 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
-import type { AvailableCopy, CheckoutResult, PendingRequest } from '@cpe334-group/shared';
+import type {
+  AvailableCopy,
+  CheckoutResult,
+  PendingRequest,
+  RejectRequestBody,
+  RejectRequestResult,
+} from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
 import { recordStatusChange } from '../history/service.js';
@@ -76,6 +82,50 @@ export function createCheckoutService({ prisma, clock }: { prisma: PrismaClient;
         select: { id: true, assetTag: true },
         orderBy: { assetTag: 'asc' },
       });
+    },
+
+    // F-08 (contract section 1.3). Scope check, then a conditional update that only touches a
+    // Pending request (BR-06), then the history entry, all in one transaction.
+    async reject(
+      custodianId: number,
+      requestId: number,
+      body: RejectRequestBody,
+    ): Promise<RejectRequestResult> {
+      return prisma.$transaction(async (tx) => {
+        const found = await tx.borrowRequest.findFirst({
+          where: { id: requestId, equipmentType: inAssignedLab(custodianId) },
+          select: { id: true },
+        });
+        if (!found) {
+          throw notFoundRequest();
+        }
+        const now = clock.now();
+        const updated = await tx.borrowRequest.updateMany({
+          where: { id: requestId, status: 'PENDING' },
+          data: {
+            status: 'REJECTED',
+            decidedAt: now,
+            decidedById: custodianId,
+            rejectionReason: body.reason,
+          },
+        });
+        if (updated.count === 0) {
+          throw invalidStatus();
+        }
+        await recordStatusChange(tx, clock, {
+          entityType: 'REQUEST',
+          entityId: requestId,
+          actorId: custodianId,
+          oldStatus: 'PENDING',
+          newStatus: 'REJECTED',
+        });
+        return {
+          id: requestId,
+          status: 'REJECTED' as const,
+          rejectionReason: body.reason,
+          decidedAt: now.toISOString(),
+        };
+      }, TRANSACTION_OPTIONS);
     },
 
     async checkout(
