@@ -198,3 +198,15 @@ model StatusHistory {
   @@index([labId, createdAt])
   @@map("status_history")
 }
+
+// F-15: one row per login attempt that reached the password check (SDS 7.3). The email is stored
+// lower-case and has no foreign key, because attempts for unknown emails are recorded too.
+model LoginAttempt {
+  id          Int      @id @default(autoincrement())
+  email       String
+  attemptedAt DateTime @map("attempted_at") @db.Timestamptz(3)
+  succeeded   Boolean
+
+  @@index([email, attemptedAt])
+  @@map("login_attempt")
+}
