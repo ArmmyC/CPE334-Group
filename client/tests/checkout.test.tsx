@@ -198,6 +198,34 @@ describe('TEST-F04-02 checkout through the copy dialog (AC-F04-02, FR-09)', () =
     expect(calls(fetchMock, LIST)).toHaveLength(2);
   });
 
+  it('removes the checked-out row at once, even while the list reload is still in flight (issue #52)', async () => {
+    let listCalls = 0;
+    stubApi({
+      'GET /api/auth/me': () => json(custodian),
+      [LIST]: () => {
+        listCalls += 1;
+        // The first load answers; the reload after checkout never answers during this test.
+        return listCalls === 1
+          ? json({ items: [oscilloscope, analyzer] })
+          : new Promise<Response>(() => {});
+      },
+      'GET /api/custodian/requests/10/available-copies': () =>
+        json({ items: [{ id: 32, assetTag: 'OSC-0002' }] }),
+      'POST /api/custodian/requests/10/checkout': () => json(loanResult, 201),
+    });
+    renderApp('/custodian/requests');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Check out Oscilloscope' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Check out Oscilloscope' });
+    await userEvent.click(await within(dialog).findByLabelText('OSC-0002'));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Confirm checkout' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Checked out OSC-0002');
+    expect(listCalls).toBe(2);
+    expect(screen.queryByRole('button', { name: 'Check out Oscilloscope' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Check out Logic analyzer' })).toBeInTheDocument();
+  });
+
   it('shows the empty state in the dialog when no copy is available, with no confirm button', async () => {
     stubApi({
       'GET /api/auth/me': () => json(custodian),
