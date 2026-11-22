@@ -94,6 +94,12 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       handler: loans.returnLoan,
     },
     {
+      method: 'post',
+      path: '/api/custodian/loans/:id/renew',
+      access: 'CUSTODIAN',
+      handler: loans.renewLoan,
+    },
+    {
       method: 'get',
       path: '/api/custodian/requests',
       access: 'CUSTODIAN',

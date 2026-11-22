@@ -20,7 +20,8 @@ type Account = Awaited<ReturnType<typeof createAccount>>;
 // 2026-11-10 12:00 in Asia/Bangkok.
 const now = new Date('2026-11-10T05:00:00.000Z');
 
-const signIn = async (app: App, account: Account) => sessionCookie(await logIn(app, account.email))!;
+const signIn = async (app: App, account: Account) =>
+  sessionCookie(await logIn(app, account.email))!;
 
 async function setUp(clockTime = now) {
   const clock = fixedClock(clockTime);

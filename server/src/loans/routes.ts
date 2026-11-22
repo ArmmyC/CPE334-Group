@@ -51,5 +51,11 @@ export function loanHandlers({ loans }: { loans: LoanService }) {
     response.json(await loans.returnLoan(response.locals.user!.id, loanId, body));
   };
 
-  return { list, listForCustodian, returnLoan };
+  // F-16. No body: the new due date comes from the loan and its type.
+  const renewLoan: RequestHandler = async (request, response) => {
+    const loanId = parseLoanId(String(request.params.id));
+    response.json(await loans.renewLoan(response.locals.user!.id, loanId));
+  };
+
+  return { list, listForCustodian, returnLoan, renewLoan };
 }

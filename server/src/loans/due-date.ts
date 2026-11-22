@@ -15,3 +15,9 @@ export function dueDateFor(now: Date, loanPeriodDays: number): Date {
   );
   return new Date(Date.UTC(parts.year, parts.month - 1, parts.day + loanPeriodDays));
 }
+
+// F-16 (BR-14): a calendar date plus whole days, as midnight UTC of the new date. The input is the
+// `date` column read as midnight UTC, so no time zone is involved.
+export function addDays(date: Date, days: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days));
+}

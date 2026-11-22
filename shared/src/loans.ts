@@ -23,6 +23,8 @@ export const custodianLoanSchema = z.object({
   status: z.literal('ACTIVE'),
   // F-10: calculated when read from the due date, never stored (BR-09).
   overdue: z.boolean().default(false),
+  // F-16: true once the loan has been renewed (BR-14).
+  renewed: z.boolean().default(false),
 });
 
 export type CustodianLoan = z.infer<typeof custodianLoanSchema>;
@@ -57,3 +59,13 @@ export const returnLoanResultSchema = z.object({
 });
 
 export type ReturnLoanResult = z.infer<typeof returnLoanResultSchema>;
+
+// F-16 renew a loan (SDS 5.2). No request body; the result carries the new due date.
+export const renewLoanResultSchema = z.object({
+  id: z.number().int(),
+  // A calendar date as YYYY-MM-DD (SDS 8).
+  dueDate: z.string(),
+  renewedAt: z.string(),
+});
+
+export type RenewLoanResult = z.infer<typeof renewLoanResultSchema>;

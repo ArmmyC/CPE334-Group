@@ -167,6 +167,8 @@ model Loan {
   returnedAt     DateTime?  @map("returned_at") @db.Timestamptz(3)
   returnedById   Int?       @map("returned_by_id")
   returnNote     String?    @map("return_note")
+  // F-16: set once when the loan is renewed, NULL while not renewed (BR-14).
+  renewedAt      DateTime?  @map("renewed_at") @db.Timestamptz(3)
 
   request      BorrowRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
   copy         Copy          @relation(fields: [copyId], references: [id], onDelete: Restrict)

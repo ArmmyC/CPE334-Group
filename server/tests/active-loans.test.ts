@@ -115,6 +115,7 @@ describe('TEST-F05-01 a custodian lists the active loans in assigned labs (AC-F0
           dueDate: '2026-11-10',
           status: 'ACTIVE',
           overdue: false,
+          renewed: false,
         },
         {
           id: later.id,
@@ -126,6 +127,7 @@ describe('TEST-F05-01 a custodian lists the active loans in assigned labs (AC-F0
           dueDate: '2026-11-13',
           status: 'ACTIVE',
           overdue: false,
+          renewed: false,
         },
       ],
     });

@@ -1,8 +1,15 @@
 import type { PrismaClient } from '@prisma/client';
-import type { CustodianLoan, Loan, ReturnLoanBody, ReturnLoanResult } from '@cpe334-group/shared';
+import type {
+  CustodianLoan,
+  Loan,
+  RenewLoanResult,
+  ReturnLoanBody,
+  ReturnLoanResult,
+} from '@cpe334-group/shared';
 import type { Clock } from '../clock.js';
 import { HttpError } from '../http/errors.js';
 import { recordStatusChange } from '../history/service.js';
+import { addDays } from './due-date.js';
 import { isOverdue } from './overdue.js';
 
 // SDS 2.5: the transaction waits up to 5 seconds for a pool connection and runs up to 10.
@@ -48,6 +55,7 @@ export function createLoanService({ prisma, clock }: { prisma: PrismaClient; clo
           id: true,
           checkedOutAt: true,
           dueDate: true,
+          renewedAt: true,
           borrower: { select: { id: true, name: true } },
           copy: {
             select: {
@@ -70,6 +78,7 @@ export function createLoanService({ prisma, clock }: { prisma: PrismaClient; clo
         dueDate: row.dueDate.toISOString().slice(0, 10),
         status: 'ACTIVE',
         overdue: isOverdue(row.dueDate, now),
+        renewed: row.renewedAt !== null,
       }));
       return options.overdueOnly ? items.filter((loan) => loan.overdue) : items;
     },
@@ -139,6 +148,56 @@ export function createLoanService({ prisma, clock }: { prisma: PrismaClient; clo
           status: 'RETURNED' as const,
           returnedAt: now.toISOString(),
           copy: { id: found.copyId, assetTag: found.copy.assetTag, status: copyStatus },
+        };
+      }, TRANSACTION_OPTIONS);
+    },
+
+    // F-16 (contract section 1.3). Scope check, state checks in a fixed order, then a conditional
+    // update that lets only one of several parallel renewals win (BR-14), and one history row.
+    async renewLoan(custodianId: number, loanId: number): Promise<RenewLoanResult> {
+      return prisma.$transaction(async (tx) => {
+        const found = await tx.loan.findFirst({
+          where: {
+            id: loanId,
+            copy: { equipmentType: { lab: { assignments: { some: { custodianId } } } } },
+          },
+          include: { copy: { include: { equipmentType: true } } },
+        });
+        if (!found) {
+          throw new HttpError(404, 'NOT_FOUND', 'This loan could not be found.');
+        }
+        if (found.status !== 'ACTIVE') {
+          throw new HttpError(409, 'INVALID_STATUS', 'Only an active loan can be renewed.');
+        }
+        if (found.renewedAt !== null) {
+          throw new HttpError(409, 'ALREADY_RENEWED', 'This loan was already renewed.');
+        }
+        const now = clock.now();
+        if (isOverdue(found.dueDate, now)) {
+          throw new HttpError(409, 'LOAN_OVERDUE', 'An overdue loan cannot be renewed.');
+        }
+
+        const dueDate = addDays(found.dueDate, found.copy.equipmentType.loanPeriodDays);
+        const updated = await tx.loan.updateMany({
+          where: { id: loanId, status: 'ACTIVE', renewedAt: null, dueDate: found.dueDate },
+          data: { dueDate, renewedAt: now },
+        });
+        if (updated.count === 0) {
+          throw new HttpError(409, 'ALREADY_RENEWED', 'This loan was already renewed.');
+        }
+
+        await recordStatusChange(tx, clock, {
+          entityType: 'LOAN',
+          entityId: loanId,
+          actorId: custodianId,
+          oldStatus: 'ACTIVE',
+          newStatus: 'ACTIVE',
+        });
+
+        return {
+          id: loanId,
+          dueDate: dueDate.toISOString().slice(0, 10),
+          renewedAt: now.toISOString(),
         };
       }, TRANSACTION_OPTIONS);
     },
