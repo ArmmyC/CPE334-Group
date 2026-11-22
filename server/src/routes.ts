@@ -17,6 +17,8 @@ import { createHistoryViewService } from './history/view.js';
 import { healthHandler, readyHandler } from './health.js';
 import { loanHandlers } from './loans/routes.js';
 import { createLoanService } from './loans/service.js';
+import { summaryHandlers } from './summary/routes.js';
+import { createSummaryService } from './summary/service.js';
 import { requestHandlers } from './requests/routes.js';
 import { createRequestService } from './requests/service.js';
 
@@ -55,6 +57,9 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
   });
   const history = historyViewHandlers({
     history: createHistoryViewService({ prisma: deps.prisma }),
+  });
+  const summary = summaryHandlers({
+    summary: createSummaryService({ prisma: deps.prisma, clock: deps.clock }),
   });
   const equipmentTypes = equipmentTypeHandlers({
     types: createEquipmentTypeService({ prisma: deps.prisma }),
@@ -154,6 +159,7 @@ export function buildRoutes(deps: AppDependencies): RouteDefinition[] {
       handler: equipmentTypes.update,
     },
     { method: 'get', path: '/api/custodian/history', access: 'CUSTODIAN', handler: history.list },
+    { method: 'get', path: '/api/custodian/summary', access: 'CUSTODIAN', handler: summary.get },
     {
       method: 'get',
       path: '/api/custodian/copies/:id/loans',

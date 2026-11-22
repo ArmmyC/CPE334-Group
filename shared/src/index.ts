@@ -10,3 +10,4 @@ export * from './equipment-types.js';
 export * from './history.js';
 export * from './filters.js';
 export * from './loan-history.js';
+export * from './summary.js';
