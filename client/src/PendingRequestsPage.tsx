@@ -20,6 +20,7 @@ import {
   type CustodianFilters,
 } from './FilterBar';
 import { formatDateTime } from './MyRequestsPage';
+import { useDialogFocus } from './useDialogFocus';
 
 type CopiesState =
   { status: 'loading' } | { status: 'error' } | { status: 'ready'; copies: AvailableCopy[] };
@@ -59,9 +60,7 @@ function CheckoutDialog({
     };
   }, [request.id, attempt]);
 
-  useEffect(() => {
-    dialogRef.current?.focus();
-  }, []);
+  useDialogFocus(dialogRef);
 
   // After a refusal the list can be out of date, so it is read again without a loading state.
   const refreshCopies = useCallback(() => {
@@ -218,9 +217,7 @@ function RejectDialog({
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    dialogRef.current?.focus();
-  }, []);
+  useDialogFocus(dialogRef);
 
   async function handleConfirm() {
     setMessage(null);

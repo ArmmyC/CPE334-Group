@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import {
   equipmentTypeCreateBodySchema,
   equipmentTypeEditBodySchema,
@@ -12,6 +12,7 @@ import {
 } from './api';
 import { useAuth } from './auth';
 import { errorMessage, useLoad } from './useLoad';
+import { useDialogFocus } from './useDialogFocus';
 
 type FormValues = {
   labId: string;
@@ -214,9 +215,7 @@ function EditDialog({
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    dialogRef.current?.focus();
-  }, []);
+  useDialogFocus(dialogRef);
 
   async function save(event: FormEvent) {
     event.preventDefault();

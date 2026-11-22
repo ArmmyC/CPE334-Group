@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { returnLoanBodySchema, type CustodianLoan } from '@cpe334-group/shared';
 import { ApiRequestError, fetchActiveLoans, renewLoan, returnLoan } from './api';
+import { useDialogFocus } from './useDialogFocus';
 import {
   CustodianFilterBar,
   NoMatches,
@@ -37,9 +38,7 @@ function ReturnDialog({
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    dialogRef.current?.focus();
-  }, []);
+  useDialogFocus(dialogRef);
 
   async function handleConfirm() {
     setMessage(null);
