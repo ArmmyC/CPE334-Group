@@ -12,6 +12,7 @@ Sources: [SRS](../../srs.md) NFR-14; [features](../../features.md) SR-08
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-22 | draft for owner | First contract, written before tests. Contract only, not implemented in this round. Not yet reviewed by the teammate. |
+| 0.2 | 2026-11-22 | draft for owner | Script and unit test implemented. Login values are read from `MEASURE_EMAIL` and `MEASURE_PASSWORD`. The statistics live in `scripts/percentile.mjs` so the unit test needs no network. The deployed-app run is still pending. |
 
 ## 1. Purpose
 
