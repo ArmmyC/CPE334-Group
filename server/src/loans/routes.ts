@@ -1,22 +1,14 @@
 import type { RequestHandler } from 'express';
 import { custodianLoansQuerySchema, returnLoanBodySchema } from '@cpe334-group/shared';
 import { HttpError } from '../http/errors.js';
+import { checkQuery } from '../http/query.js';
 import { validateBody } from '../http/validate.js';
 import type { LoanService } from './service.js';
 
-// `status` and `overdue` are the known parameters. The lab and borrower filters come in Sprint 3,
-// and an unknown parameter is refused (SDS 5.1).
+// `status`, `overdue`, `labId`, and `borrowerId` are the known parameters (F-10, F-17). An unknown
+// parameter is refused (SDS 5.1).
 function checkCustodianListQuery(query: Record<string, unknown>) {
-  const unknown = Object.keys(query).filter((key) => key !== 'status' && key !== 'overdue');
-  if (unknown.length > 0) {
-    throw new HttpError(
-      400,
-      'VALIDATION_ERROR',
-      'Check the highlighted fields.',
-      Object.fromEntries(unknown.map((name) => [name, 'Unknown parameter.'])),
-    );
-  }
-  return validateBody(custodianLoansQuerySchema, query);
+  return checkQuery(custodianLoansQuerySchema, ['status', 'overdue', 'labId', 'borrowerId'], query);
 }
 
 // Digits only, within the 32-bit integer range. Anything else cannot be a loan this custodian can
@@ -40,6 +32,8 @@ export function loanHandlers({ loans }: { loans: LoanService }) {
     response.json({
       items: await loans.listActiveForCustodian(response.locals.user!.id, {
         overdueOnly: query.overdue === 'true',
+        labId: query.labId,
+        borrowerId: query.borrowerId,
       }),
     });
   };

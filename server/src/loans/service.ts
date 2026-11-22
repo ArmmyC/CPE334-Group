@@ -43,13 +43,19 @@ export function createLoanService({ prisma, clock }: { prisma: PrismaClient; clo
     // assignment matches nothing and gets an empty list.
     async listActiveForCustodian(
       custodianId: number,
-      options: { overdueOnly?: boolean } = {},
+      options: { overdueOnly?: boolean; labId?: number; borrowerId?: number } = {},
     ): Promise<CustodianLoan[]> {
       const now = clock.now();
       const rows = await prisma.loan.findMany({
         where: {
           status: 'ACTIVE',
-          copy: { equipmentType: { lab: { assignments: { some: { custodianId } } } } },
+          copy: {
+            equipmentType: {
+              lab: { assignments: { some: { custodianId } } },
+              ...(options.labId ? { labId: options.labId } : {}),
+            },
+          },
+          ...(options.borrowerId ? { borrowerId: options.borrowerId } : {}),
         },
         select: {
           id: true,

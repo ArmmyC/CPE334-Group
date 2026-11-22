@@ -54,9 +54,20 @@ const requestInclude = {
 // chosen, and checkout. Checkout runs the SDS 2.5 transaction and calls the F-07 recorder in it.
 export function createCheckoutService({ prisma, clock }: { prisma: PrismaClient; clock: Clock }) {
   return {
-    async listPending(custodianId: number): Promise<PendingRequest[]> {
+    // F-17: the lab and borrower filters narrow the list after the assigned-lab scope (BR-15).
+    async listPending(
+      custodianId: number,
+      filters: { labId?: number; borrowerId?: number } = {},
+    ): Promise<PendingRequest[]> {
       const rows = await prisma.borrowRequest.findMany({
-        where: { status: 'PENDING', equipmentType: inAssignedLab(custodianId) },
+        where: {
+          status: 'PENDING',
+          equipmentType: {
+            ...inAssignedLab(custodianId),
+            ...(filters.labId ? { labId: filters.labId } : {}),
+          },
+          ...(filters.borrowerId ? { borrowerId: filters.borrowerId } : {}),
+        },
         include: requestInclude,
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       });

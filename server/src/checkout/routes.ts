@@ -1,6 +1,11 @@
 import type { RequestHandler } from 'express';
-import { checkoutBodySchema, rejectRequestBodySchema } from '@cpe334-group/shared';
+import {
+  checkoutBodySchema,
+  custodianRequestsQuerySchema,
+  rejectRequestBodySchema,
+} from '@cpe334-group/shared';
 import { HttpError } from '../http/errors.js';
+import { checkQuery } from '../http/query.js';
 import { validateBody } from '../http/validate.js';
 import type { CheckoutService } from './service.js';
 
@@ -19,28 +24,14 @@ function parseId(value: string): number {
   return id;
 }
 
-// Only `status=PENDING` is allowed in Sprint 1, and it is the default. Other filters are
-// Sprint 3, and an unknown parameter is refused (SDS 5.1).
-function checkListQuery(query: Record<string, unknown>) {
-  const message = 'Check the highlighted fields.';
-  const unknown = Object.keys(query).filter((key) => key !== 'status');
-  if (unknown.length > 0) {
-    throw new HttpError(
-      400,
-      'VALIDATION_ERROR',
-      message,
-      Object.fromEntries(unknown.map((name) => [name, 'Unknown parameter.'])),
-    );
-  }
-  if (query.status !== undefined && query.status !== 'PENDING') {
-    throw new HttpError(400, 'VALIDATION_ERROR', message, { status: 'Use status=PENDING.' });
-  }
-}
-
 export function checkoutHandlers({ checkout }: { checkout: CheckoutService }) {
   const listPending: RequestHandler = async (request, response) => {
-    checkListQuery(request.query);
-    response.json({ items: await checkout.listPending(response.locals.user!.id) });
+    const filters = checkQuery(
+      custodianRequestsQuerySchema,
+      ['status', 'labId', 'borrowerId'],
+      request.query,
+    );
+    response.json({ items: await checkout.listPending(response.locals.user!.id, filters) });
   };
 
   const listAvailableCopies: RequestHandler = async (request, response) => {

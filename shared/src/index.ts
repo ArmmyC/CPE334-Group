@@ -8,3 +8,4 @@ export * from './catalog.js';
 export * from './loans.js';
 export * from './equipment-types.js';
 export * from './history.js';
+export * from './filters.js';

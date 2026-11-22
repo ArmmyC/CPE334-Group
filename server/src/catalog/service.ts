@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import type { CatalogResponse, EquipmentTypeDetail } from '@cpe334-group/shared';
+import type { CatalogQuery, CatalogResponse, EquipmentTypeDetail } from '@cpe334-group/shared';
 
 // Reads for F-02. Only catalog columns are selected, and the count of Available copies is
 // part of the same query, so it is live (FR-04) and no loan or holder data is read (BR-16).
@@ -13,10 +13,23 @@ const typeSelect = {
   _count: { select: { copies: { where: { status: 'AVAILABLE' as const } } } },
 };
 
+// Prisma passes `contains` to LIKE as it is, so the LIKE wildcards in a search are escaped and
+// match as plain characters (PostgreSQL's default escape character is the backslash).
+const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
+
 export function createCatalogService({ prisma }: { prisma: PrismaClient }) {
   return {
-    async listCatalog(): Promise<CatalogResponse> {
+    // F-17: the filters are part of the query and combine with AND.
+    async listCatalog(filters: CatalogQuery = {}): Promise<CatalogResponse> {
       const types = await prisma.equipmentType.findMany({
+        where: {
+          ...(filters.q
+            ? { name: { contains: escapeLike(filters.q), mode: 'insensitive' as const } }
+            : {}),
+          ...(filters.category ? { category: filters.category } : {}),
+          ...(filters.labId ? { labId: filters.labId } : {}),
+          ...(filters.available ? { copies: { some: { status: 'AVAILABLE' as const } } } : {}),
+        },
         select: typeSelect,
         orderBy: [{ lab: { name: 'asc' } }, { lab: { id: 'asc' } }, { name: 'asc' }, { id: 'asc' }],
       });

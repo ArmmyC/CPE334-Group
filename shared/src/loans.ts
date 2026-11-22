@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { loanFilterShape } from './filters.js';
 
 // Request and response shapes for F-05 active loan list (SDS 5.2), used by the API and the UI.
 
@@ -6,6 +7,7 @@ import { z } from 'zod';
 export const custodianLoansQuerySchema = z.object({
   status: z.literal('ACTIVE', { error: 'Use status=ACTIVE.' }).optional(),
   overdue: z.literal('true', { error: 'Use overdue=true.' }).optional(),
+  ...loanFilterShape,
 });
 
 export type CustodianLoansQuery = z.infer<typeof custodianLoansQuerySchema>;

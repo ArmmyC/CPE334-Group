@@ -1,11 +1,13 @@
 import type { RequestHandler } from 'express';
+import { catalogQuerySchema } from '@cpe334-group/shared';
 import { HttpError } from '../http/errors.js';
+import { checkQuery } from '../http/query.js';
 import type { CatalogService } from './service.js';
 
 // The largest value of a PostgreSQL integer column. A larger id cannot exist.
 const MAX_ID = 2_147_483_647;
 
-// Sprint 1 has no catalog filters, so any query parameter is refused (SDS 5.1).
+// The detail route has no filters, so any query parameter is refused (SDS 5.1).
 function refuseQueryParameters(query: Record<string, unknown>): void {
   const names = Object.keys(query);
   if (names.length === 0) return;
@@ -21,8 +23,13 @@ const notFound = () => new HttpError(404, 'NOT_FOUND', 'Equipment type not found
 // HTTP handlers for F-02. They translate requests to catalog service calls.
 export function catalogHandlers({ catalog }: { catalog: CatalogService }) {
   const list: RequestHandler = async (request, response) => {
-    refuseQueryParameters(request.query);
-    response.json(await catalog.listCatalog());
+    // F-17: search and filter parameters. Anything else is refused (SDS 5.1).
+    const filters = checkQuery(
+      catalogQuerySchema,
+      ['q', 'category', 'labId', 'available'],
+      request.query,
+    );
+    response.json(await catalog.listCatalog(filters));
   };
 
   const detail: RequestHandler = async (request, response) => {

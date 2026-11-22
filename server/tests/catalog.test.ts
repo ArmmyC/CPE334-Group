@@ -278,12 +278,12 @@ describe('Supporting check: unknown query parameter', () => {
     const { a1 } = await seedCatalog();
 
     for (const path of ['/api/equipment-types', `/api/equipment-types/${a1.id}`]) {
-      const response = await get(app, cookie, `${path}?q=arduino`);
+      const response = await get(app, cookie, `${path}?x=arduino`);
 
       expect(response.status).toBe(400);
       const { error } = apiErrorSchema.parse(response.body);
       expect(error.code).toBe('VALIDATION_ERROR');
-      expect(error.fields).toHaveProperty('q');
+      expect(error.fields).toHaveProperty('x');
     }
   });
 });
