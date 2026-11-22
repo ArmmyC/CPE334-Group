@@ -15,6 +15,9 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.tsx', 'tests/**/*.test.ts'],
     setupFiles: './src/test/setup.ts',
+    // Longer than the 5 second async util timeout in the setup file, so a missing element fails
+    // with its own message and not with a bare test timeout.
+    testTimeout: 10000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
