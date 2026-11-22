@@ -142,8 +142,13 @@ export async function cancelRequest(id: number): Promise<BorrowRequest> {
 }
 
 // The Pending requests in the custodian's labs, oldest first (F-04).
-export async function fetchPendingRequests(): Promise<PendingRequest[]> {
-  const response = await send('/api/custodian/requests?status=PENDING', { method: 'GET' });
+export async function fetchPendingRequests(
+  filters: { labId?: number; borrowerId?: number } = {},
+): Promise<PendingRequest[]> {
+  const params = new URLSearchParams({ status: 'PENDING' });
+  if (filters.labId !== undefined) params.set('labId', String(filters.labId));
+  if (filters.borrowerId !== undefined) params.set('borrowerId', String(filters.borrowerId));
+  const response = await send(`/api/custodian/requests?${params.toString()}`, { method: 'GET' });
   return pendingRequestListSchema.parse(await response.json()).items;
 }
 
@@ -193,13 +198,17 @@ export async function changeCopyStatus(
 
 // F-05 active loans in the custodian's labs, earliest due date first (SDS 5.2). F-10 adds the
 // overdue-only filter.
-export async function fetchActiveLoans(overdueOnly = false): Promise<CustodianLoan[]> {
-  const response = await send(
-    overdueOnly ? '/api/custodian/loans?overdue=true' : '/api/custodian/loans',
-    {
-      method: 'GET',
-    },
-  );
+export async function fetchActiveLoans(
+  options: { overdueOnly?: boolean; labId?: number; borrowerId?: number } = {},
+): Promise<CustodianLoan[]> {
+  const params = new URLSearchParams();
+  if (options.overdueOnly) params.set('overdue', 'true');
+  if (options.labId !== undefined) params.set('labId', String(options.labId));
+  if (options.borrowerId !== undefined) params.set('borrowerId', String(options.borrowerId));
+  const query = params.toString();
+  const response = await send(`/api/custodian/loans${query ? `?${query}` : ''}`, {
+    method: 'GET',
+  });
   return custodianLoansResponseSchema.parse(await response.json()).items;
 }
 
@@ -219,8 +228,24 @@ export async function renewLoan(id: number): Promise<RenewLoanResult> {
 }
 
 // F-02 catalog reads.
-export async function fetchCatalog(): Promise<CatalogResponse> {
-  const response = await send('/api/equipment-types', { method: 'GET' });
+export type CatalogFilters = {
+  q?: string;
+  category?: string;
+  labId?: number;
+  available?: boolean;
+};
+
+// F-17: the filters go in the query string. No filter sends the plain URL.
+export async function fetchCatalog(filters: CatalogFilters = {}): Promise<CatalogResponse> {
+  const params = new URLSearchParams();
+  if (filters.q) params.set('q', filters.q);
+  if (filters.category) params.set('category', filters.category);
+  if (filters.labId !== undefined) params.set('labId', String(filters.labId));
+  if (filters.available) params.set('available', 'true');
+  const query = params.toString();
+  const response = await send(`/api/equipment-types${query ? `?${query}` : ''}`, {
+    method: 'GET',
+  });
   return catalogResponseSchema.parse(await response.json());
 }
 

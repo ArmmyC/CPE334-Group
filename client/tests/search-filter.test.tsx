@@ -161,11 +161,11 @@ describe('TEST-F17-05 the custodian filters (AC-F17-05, FR-19)', () => {
       'GET /api/custodian/requests?status=PENDING&labId=1&borrowerId=4': () => json({ items: [] }),
     });
     renderApp('/custodian/requests');
-    await screen.findByText('Arisa Kittipong');
+    await screen.findByRole('cell', { name: 'Arisa Kittipong' });
 
     await userEvent.selectOptions(screen.getByLabelText('Borrower'), 'Somchai Rattana');
     await screen.findByText('Managed switch');
-    expect(screen.queryByText('Arisa Kittipong')).toBeNull();
+    expect(screen.queryByRole('cell', { name: 'Arisa Kittipong' })).toBeNull();
 
     await userEvent.selectOptions(screen.getByLabelText('Lab'), 'Embedded Systems Lab');
     await screen.findByText('Nothing matches these filters.');
@@ -174,7 +174,7 @@ describe('TEST-F17-05 the custodian filters (AC-F17-05, FR-19)', () => {
     );
 
     await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(await screen.findByText('Arisa Kittipong')).toBeInTheDocument();
+    expect(await screen.findByRole('cell', { name: 'Arisa Kittipong' })).toBeInTheDocument();
   });
 
   it('filters active loans by lab and borrower', async () => {

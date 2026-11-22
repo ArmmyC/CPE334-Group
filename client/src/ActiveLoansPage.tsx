@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { returnLoanBodySchema, type CustodianLoan } from '@cpe334-group/shared';
 import { ApiRequestError, fetchActiveLoans, renewLoan, returnLoan } from './api';
+import {
+  CustodianFilterBar,
+  NoMatches,
+  hasFilters,
+  optionsFrom,
+  type CustodianFilters,
+} from './FilterBar';
 import { formatDateTime } from './MyRequestsPage';
 import { errorMessage, useLoad } from './useLoad';
 
@@ -158,10 +165,27 @@ export function ActiveLoansPage() {
   const [selected, setSelected] = useState<CustodianLoan | null>(null);
   const [notice, setNotice] = useState<{ kind: 'success' | 'warning'; text: string } | null>(null);
   const [renewing, setRenewing] = useState<number | null>(null);
+  const [filters, setFilters] = useState<CustodianFilters>({});
+  const [options, setOptions] = useState<ReturnType<typeof optionsFrom> | null>(null);
   const { state, reload } = useLoad(
-    () => fetchActiveLoans(overdueOnly),
-    overdueOnly ? 'custodian-loans-overdue' : 'custodian-loans',
+    () => fetchActiveLoans({ overdueOnly, ...filters }),
+    `custodian-loans-${overdueOnly}-${filters.labId ?? ''}-${filters.borrowerId ?? ''}`,
   );
+
+  // The first unfiltered answer is used at once, before the effect below keeps it.
+  const shownOptions =
+    options ??
+    (state.status === 'ready' && !hasFilters(filters) && !overdueOnly
+      ? optionsFrom(state.data)
+      : null);
+
+  // The filter options come from the first answer with no filter, so they stay when a filter
+  // returns nothing (F-17).
+  useEffect(() => {
+    if (state.status === 'ready' && !hasFilters(filters) && !overdueOnly) {
+      setOptions(optionsFrom(state.data));
+    }
+  }, [state, filters, overdueOnly]);
 
   // F-16: one click renews the loan. A refusal shows the server message and reloads the list.
   async function handleRenew(loan: CustodianLoan) {
@@ -203,6 +227,9 @@ export function ActiveLoansPage() {
           Overdue only
         </label>
       </div>
+      {shownOptions && shownOptions.borrowers.length > 0 && (
+        <CustodianFilterBar options={shownOptions} filters={filters} onChange={setFilters} />
+      )}
       {notice && (
         <div role="status" className={`alert alert-${notice.kind}`}>
           {notice.text}
@@ -217,7 +244,10 @@ export function ActiveLoansPage() {
           </button>
         </div>
       )}
-      {state.status === 'ready' && state.data.length === 0 && (
+      {state.status === 'ready' && state.data.length === 0 && hasFilters(filters) && (
+        <NoMatches onClear={() => setFilters({})} />
+      )}
+      {state.status === 'ready' && state.data.length === 0 && !hasFilters(filters) && (
         <p className="text-body-secondary">
           {overdueOnly ? 'No overdue loans in your labs.' : 'No active loans in your labs.'}
         </p>

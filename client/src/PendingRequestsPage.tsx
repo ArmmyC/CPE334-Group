@@ -12,6 +12,13 @@ import {
   fetchPendingRequests,
   rejectRequest,
 } from './api';
+import {
+  CustodianFilterBar,
+  NoMatches,
+  hasFilters,
+  optionsFrom,
+  type CustodianFilters,
+} from './FilterBar';
 import { formatDateTime } from './MyRequestsPage';
 
 type CopiesState =
@@ -329,13 +336,18 @@ export function PendingRequestsPage() {
   const [rejecting, setRejecting] = useState<PendingRequest | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [filters, setFilters] = useState<CustodianFilters>({});
+  const [options, setOptions] = useState<ReturnType<typeof optionsFrom> | null>(null);
 
   useEffect(() => {
     let active = true;
     setLoadFailed(false);
-    fetchPendingRequests()
+    fetchPendingRequests(filters)
       .then((list) => {
-        if (active) setItems(list);
+        if (!active) return;
+        setItems(list);
+        // The filter options come from the first answer with no filter (F-17).
+        if (!hasFilters(filters)) setOptions(optionsFrom(list));
       })
       .catch(() => {
         if (active) setLoadFailed(true);
@@ -343,7 +355,9 @@ export function PendingRequestsPage() {
     return () => {
       active = false;
     };
-  }, [attempt]);
+    // `filters` is read through its two ids so the effect runs when a filter changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt, filters.labId, filters.borrowerId]);
 
   function handleDone(request: PendingRequest, result: CheckoutResult) {
     setSelected(null);
@@ -371,6 +385,8 @@ export function PendingRequestsPage() {
         </button>
       </div>
     );
+  } else if (items.length === 0 && hasFilters(filters)) {
+    body = <NoMatches onClear={() => setFilters({})} />;
   } else if (items.length === 0) {
     body = <p className="text-body-secondary">No pending requests in your labs.</p>;
   } else {
@@ -434,6 +450,9 @@ export function PendingRequestsPage() {
   return (
     <section>
       <h1 className="h3 mb-3">Pending requests</h1>
+      {options && options.borrowers.length > 0 && (
+        <CustodianFilterBar options={options} filters={filters} onChange={setFilters} />
+      )}
       {success && (
         <div role="status" className="alert alert-success">
           {success}
