@@ -210,5 +210,6 @@ model LoginAttempt {
   succeeded   Boolean
 
   @@index([email, attemptedAt])
+  @@index([attemptedAt])
   @@map("login_attempt")
 }

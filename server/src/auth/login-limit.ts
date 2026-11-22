@@ -6,6 +6,20 @@ import { HttpError } from '../http/errors.js';
 export const MAX_FAILURES = 10;
 export const WINDOW_MS = 15 * 60 * 1000;
 
+// An attempt older than the window never changes a lock, a success included, so it is dead data.
+// Each login deletes up to PRUNE_BATCH of them for any email, which keeps the table at about the
+// size of the last 15 minutes of traffic with a bounded cost per login.
+const PRUNE_BATCH = 100;
+
+async function pruneOldAttempts(prisma: Prisma.TransactionClient, now: Date): Promise<void> {
+  const cutoff = new Date(now.getTime() - WINDOW_MS);
+  await prisma.$executeRaw`
+    DELETE FROM login_attempt
+    WHERE id IN (
+      SELECT id FROM login_attempt WHERE attempted_at < ${cutoff} ORDER BY attempted_at LIMIT ${PRUNE_BATCH}
+    )`;
+}
+
 // Returns how many seconds the email stays locked, or null when it is not locked. Only failures
 // after the last success count, so a success resets the count. The window slides: the lock ends
 // when the oldest failure that keeps the count at the limit is 15 minutes old.
@@ -47,6 +61,7 @@ export async function beginLoginAttempt(
 ): Promise<number> {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+    await pruneOldAttempts(tx, now);
     const lockSeconds = await loginLockSeconds(tx, email, now);
     if (lockSeconds !== null) {
       throw new HttpError(
