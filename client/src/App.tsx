@@ -8,6 +8,7 @@ import { EquipmentDetailPage } from './EquipmentDetailPage';
 import { CopiesPage } from './CopiesPage';
 import { EquipmentTypesPage } from './EquipmentTypesPage';
 import { HistoryPage } from './HistoryPage';
+import { LoanHistoryPage } from './LoanHistoryPage';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
 import { PendingRequestsPage } from './PendingRequestsPage';
@@ -169,6 +170,22 @@ function Content() {
         element={
           <RequireRole role="CUSTODIAN">
             <CopiesPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/copies/:id/loans"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <LoanHistoryPage kind="copy" />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/borrowers/:id/loans"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <LoanHistoryPage kind="borrower" />
           </RequireRole>
         }
       />

@@ -12,6 +12,7 @@ Sources: [SRS](../../srs.md) FR-20; [System-Level SDS](../../system-sds.md) sect
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-22 | draft for owner | First contract, written before tests. Contract only, not implemented in this round. Not yet reviewed by the teammate. |
+| 0.2 | 2026-11-22 | draft for owner | Implemented. A bad borrower id is a 404 (same as a bad copy id), so the borrower route lists 400, 401, 403, 404. Client pages added at `/custodian/copies/:id/loans` and `/custodian/borrowers/:id/loans`. |
 
 ## 1. Feature-Level SDS
 
@@ -38,7 +39,7 @@ A custodian sees every loan of one copy, and every loan of one borrower, limited
 | Method and path | Access | Query | Success | Errors |
 | --- | --- | --- | --- | --- |
 | `GET /api/custodian/copies/:id/loans` | Custodian | `limit`, `beforeId` | 200 `{ items, nextBeforeId }`, each item `{ id, borrower, assetTag, equipmentType, lab, checkedOutAt, dueDate, status, returnedAt, returnNote, renewed }` | 400, 401, 403, 404 |
-| `GET /api/custodian/borrowers/:id/loans` | Custodian | `limit`, `beforeId` | 200, same shape | 400, 401, 403 |
+| `GET /api/custodian/borrowers/:id/loans` | Custodian | `limit`, `beforeId` | 200, same shape | 400, 401, 403, 404 |
 
 ## 3. UI specification
 

@@ -13,6 +13,7 @@ import {
   equipmentTypeDetailSchema,
   healthResponseSchema,
   historyResponseSchema,
+  loanHistoryResponseSchema,
   loanSchema,
   pendingRequestListSchema,
   rejectRequestResultSchema,
@@ -37,6 +38,7 @@ import {
   type HistoryEntityType,
   type HistoryResponse,
   type Loan,
+  type LoanHistoryResponse,
   type LoginRequest,
   type PendingRequest,
   type RejectRequestBody,
@@ -177,6 +179,26 @@ export async function rejectRequest(
     body: JSON.stringify(body),
   });
   return rejectRequestResultSchema.parse(await response.json());
+}
+
+export type LoanHistoryKind = 'copy' | 'borrower';
+
+// F-18: one page of the loans of a copy or a borrower. `beforeId` continues after the last loan
+// of the previous page.
+export async function fetchLoanHistory(
+  kind: LoanHistoryKind,
+  id: string | number,
+  beforeId?: number,
+): Promise<LoanHistoryResponse> {
+  const base = kind === 'copy' ? 'copies' : 'borrowers';
+  const query = beforeId === undefined ? '' : `?beforeId=${beforeId}`;
+  const response = await send(
+    `/api/custodian/${base}/${encodeURIComponent(String(id))}/loans${query}`,
+    {
+      method: 'GET',
+    },
+  );
+  return loanHistoryResponseSchema.parse(await response.json());
 }
 
 // F-06 copy maintenance status (SDS 5.2).

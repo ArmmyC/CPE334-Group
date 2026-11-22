@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { returnLoanBodySchema, type CustodianLoan } from '@cpe334-group/shared';
 import { ApiRequestError, fetchActiveLoans, renewLoan, returnLoan } from './api';
 import {
@@ -271,7 +272,11 @@ export function ActiveLoansPage() {
             <tbody>
               {state.data.map((loan) => (
                 <tr key={loan.id}>
-                  <td>{loan.borrower.name}</td>
+                  <td>
+                    <Link to={`/custodian/borrowers/${loan.borrower.id}/loans`}>
+                      {loan.borrower.name}
+                    </Link>
+                  </td>
                   <td>{loan.equipmentType.name}</td>
                   <td>{loan.lab.name}</td>
                   <td>{loan.assetTag}</td>

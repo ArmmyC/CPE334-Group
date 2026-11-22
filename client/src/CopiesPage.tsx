@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import {
   COPY_STATUS_LABEL,
   createCopyBodySchema,
@@ -268,6 +269,7 @@ export function CopiesPage() {
                 <th scope="col">Asset tag</th>
                 <th scope="col">Status</th>
                 <th scope="col">Action</th>
+                <th scope="col">Loans</th>
               </tr>
             </thead>
             <tbody>
@@ -332,6 +334,14 @@ export function CopiesPage() {
                           )}
                         </div>
                       )}
+                    </td>
+                    <td>
+                      <Link
+                        to={`/custodian/copies/${copy.id}/loans`}
+                        aria-label={`History of ${copy.assetTag}`}
+                      >
+                        History
+                      </Link>
                     </td>
                   </tr>
                 );
