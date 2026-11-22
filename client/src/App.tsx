@@ -9,6 +9,7 @@ import { CopiesPage } from './CopiesPage';
 import { EquipmentTypesPage } from './EquipmentTypesPage';
 import { HistoryPage } from './HistoryPage';
 import { LoanHistoryPage } from './LoanHistoryPage';
+import { SummaryPage } from './SummaryPage';
 import { LoginPage } from './LoginPage';
 import { MyRequestsPage } from './MyRequestsPage';
 import { PendingRequestsPage } from './PendingRequestsPage';
@@ -67,6 +68,9 @@ function Header() {
               </Link>
               <Link className="nav-link text-white" to="/custodian/history">
                 History
+              </Link>
+              <Link className="nav-link text-white" to="/custodian/summary">
+                Summary
               </Link>
             </div>
           )}
@@ -202,6 +206,14 @@ function Content() {
         element={
           <RequireRole role="CUSTODIAN">
             <HistoryPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/custodian/summary"
+        element={
+          <RequireRole role="CUSTODIAN">
+            <SummaryPage />
           </RequireRole>
         }
       />

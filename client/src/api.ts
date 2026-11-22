@@ -19,6 +19,7 @@ import {
   rejectRequestResultSchema,
   renewLoanResultSchema,
   returnLoanResultSchema,
+  summaryResponseSchema,
   type AvailableCopy,
   type BorrowRequest,
   type CheckoutResult,
@@ -46,6 +47,7 @@ import {
   type RejectRequestResult,
   type ReturnLoanBody,
   type ReturnLoanResult,
+  type SummaryResponse,
 } from '@cpe334-group/shared';
 
 // An API error in the shared shape (SDS 5.3), with `fields` for validation errors.
@@ -199,6 +201,20 @@ export async function fetchLoanHistory(
     },
   );
   return loanHistoryResponseSchema.parse(await response.json());
+}
+
+// F-19: the inventory summary. No range sends the plain URL and the server picks the last 30 days.
+export async function fetchSummary(
+  range: { from?: string; to?: string } = {},
+): Promise<SummaryResponse> {
+  const params = new URLSearchParams();
+  if (range.from) params.set('from', range.from);
+  if (range.to) params.set('to', range.to);
+  const query = params.toString();
+  const response = await send(`/api/custodian/summary${query ? `?${query}` : ''}`, {
+    method: 'GET',
+  });
+  return summaryResponseSchema.parse(await response.json());
 }
 
 // F-06 copy maintenance status (SDS 5.2).

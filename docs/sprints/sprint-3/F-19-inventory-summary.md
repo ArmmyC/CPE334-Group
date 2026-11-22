@@ -12,6 +12,7 @@ Sources: [SRS](../../srs.md) FR-21; [System-Level SDS](../../system-sds.md) sect
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-22 | draft for owner | First contract, written before tests. Contract only, not implemented in this round. Not yet reviewed by the teammate. |
+| 0.2 | 2026-11-22 | draft for owner | Implemented. `from` and `to` are each optional: `to` defaults to today in Bangkok and `from` to 29 days before `to` (30 days inclusive). A reversed or over-long range is a 400 on field `to`. Figures use three grouped SQL queries for all assigned labs. |
 
 ## 1. Feature-Level SDS
 
