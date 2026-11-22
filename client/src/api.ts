@@ -16,6 +16,7 @@ import {
   loanSchema,
   pendingRequestListSchema,
   rejectRequestResultSchema,
+  renewLoanResultSchema,
   returnLoanResultSchema,
   type AvailableCopy,
   type BorrowRequest,
@@ -39,6 +40,7 @@ import {
   type LoginRequest,
   type PendingRequest,
   type RejectRequestBody,
+  type RenewLoanResult,
   type RejectRequestResult,
   type ReturnLoanBody,
   type ReturnLoanResult,
@@ -208,6 +210,12 @@ export async function returnLoan(id: number, body: ReturnLoanBody): Promise<Retu
     body: JSON.stringify(body),
   });
   return returnLoanResultSchema.parse(await response.json());
+}
+
+// F-16 renew a loan once (SDS 5.2).
+export async function renewLoan(id: number): Promise<RenewLoanResult> {
+  const response = await send(`/api/custodian/loans/${id}/renew`, { method: 'POST' });
+  return renewLoanResultSchema.parse(await response.json());
 }
 
 // F-02 catalog reads.

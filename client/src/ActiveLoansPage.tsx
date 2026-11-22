@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { returnLoanBodySchema, type CustodianLoan } from '@cpe334-group/shared';
-import { ApiRequestError, fetchActiveLoans, returnLoan } from './api';
+import { ApiRequestError, fetchActiveLoans, renewLoan, returnLoan } from './api';
 import { formatDateTime } from './MyRequestsPage';
 import { errorMessage, useLoad } from './useLoad';
 
@@ -157,10 +157,36 @@ export function ActiveLoansPage() {
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [selected, setSelected] = useState<CustodianLoan | null>(null);
   const [notice, setNotice] = useState<{ kind: 'success' | 'warning'; text: string } | null>(null);
+  const [renewing, setRenewing] = useState<number | null>(null);
   const { state, reload } = useLoad(
     () => fetchActiveLoans(overdueOnly),
     overdueOnly ? 'custodian-loans-overdue' : 'custodian-loans',
   );
+
+  // F-16: one click renews the loan. A refusal shows the server message and reloads the list.
+  async function handleRenew(loan: CustodianLoan) {
+    setNotice(null);
+    setRenewing(loan.id);
+    try {
+      const result = await renewLoan(loan.id);
+      setNotice({
+        kind: 'success',
+        text: `Renewed ${loan.assetTag}. New due date ${result.dueDate}.`,
+      });
+    } catch (error) {
+      if (error instanceof ApiRequestError && (error.status === 409 || error.status === 404)) {
+        setNotice({
+          kind: 'warning',
+          text: error.status === 404 ? 'Loan not found.' : error.message,
+        });
+      } else {
+        setNotice({ kind: 'warning', text: 'Could not reach the server.' });
+      }
+    } finally {
+      setRenewing(null);
+      reload();
+    }
+  }
 
   return (
     <section>
@@ -224,7 +250,19 @@ export function ActiveLoansPage() {
                     {loan.dueDate}
                     {loan.overdue && <OverdueBadge />}
                   </td>
-                  <td>
+                  <td className="text-nowrap">
+                    {loan.renewed ? (
+                      <span className="text-body-secondary me-2">Renewed</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm me-2"
+                        disabled={renewing === loan.id}
+                        onClick={() => void handleRenew(loan)}
+                      >
+                        Renew
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="btn btn-outline-primary btn-sm"
