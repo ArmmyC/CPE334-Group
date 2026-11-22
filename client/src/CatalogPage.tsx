@@ -36,6 +36,11 @@ export function CatalogPage() {
     if (state.status === 'ready' && !hasFilters(filters)) setOptions(optionsFrom(state.data));
   }, [state, filters]);
 
+  // An unfiltered answer is used in the same render it arrives, so the controls never lag behind
+  // the list. A filtered answer keeps the options of the last unfiltered one.
+  const shownOptions =
+    state.status === 'ready' && !hasFilters(filters) ? optionsFrom(state.data) : options;
+
   function submitSearch(event: FormEvent) {
     event.preventDefault();
     const text = draft.trim();
@@ -80,7 +85,7 @@ export function CatalogPage() {
             }
           >
             <option value="">All categories</option>
-            {options.categories.map((category) => (
+            {shownOptions.categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>
@@ -103,7 +108,7 @@ export function CatalogPage() {
             }
           >
             <option value="">All labs</option>
-            {options.labs.map((lab) => (
+            {shownOptions.labs.map((lab) => (
               <option key={lab.id} value={lab.id}>
                 {lab.name}
               </option>
