@@ -11,7 +11,8 @@ Sources: [SRS](../../srs.md) FR-19; [System-Level SDS](../../system-sds.md) sect
 
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
-| 0.1 | 2026-11-22 | draft for owner | First contract, written before tests. Contract only, not implemented in this round. Not yet reviewed by the teammate. |
+| 0.1 | 2026-11-22 | draft for owner | First contract, written before tests. Not yet reviewed by the teammate. |
+| 0.2 | 2026-11-23 | draft for owner | Catalog access is Borrower (as in the route table). The requests list keeps `status=PENDING` as its only status value, because only Pending requests are listed. The page filters use the unfiltered list as the source of their options. |
 
 ## 1. Feature-Level SDS
 
@@ -40,13 +41,13 @@ Borrowers search and filter the catalog by name, category, lab, and availability
 
 | Method and path | Access | Query | Success | Errors |
 | --- | --- | --- | --- | --- |
-| `GET /api/equipment-types` | Signed in | `q`, `category`, `labId`, `available` | 200 same shape as F-02 | 400, 401 |
-| `GET /api/custodian/requests` | Custodian | `status`, `labId`, `borrowerId` | 200 same shape as F-04 | 400, 401, 403 |
+| `GET /api/equipment-types` | Borrower | `q`, `category`, `labId`, `available` | 200 same shape as F-02 | 400, 401 |
+| `GET /api/custodian/requests` | Custodian | `status` (only `PENDING`), `labId`, `borrowerId` | 200 same shape as F-04 | 400, 401, 403 |
 | `GET /api/custodian/loans` | Custodian | `status`, `overdue`, `labId`, `borrowerId` | 200 same shape as F-05 | 400, 401, 403 |
 
 ## 3. UI specification
 
-A search box and Category, Lab, and "Available only" controls above the catalog. A Lab and a Borrower control above each custodian list. The empty sentence is "Nothing matches these filters." with a "Clear filters" button.
+A search box and Category, Lab, and "Available only" controls above the catalog. A Lab and a Borrower control above each custodian list. The Category, Lab, and Borrower options come from the first, unfiltered answer of the page, so they stay when a filter returns nothing. The empty sentence is "Nothing matches these filters." with a "Clear filters" button.
 
 ## 4. Acceptance criteria
 
@@ -75,4 +76,4 @@ SR-01 (routes keep their access levels), SR-02 (400 shape and UI states), SR-08 
 ## 7. Definition of Done
 
 - Contract committed before tests, tests failing before implementation. TEST-F17-01 to TEST-F17-05 passing, lint, format, build, existing tests pass.
-- Teammate review and merge (pending). Not started in this round.
+- Teammate review and merge (pending).
