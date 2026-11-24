@@ -25,7 +25,7 @@ export const equipmentTypeDetailSchema = z.object({
   name: z.string(),
   category: z.string(),
   description: z.string(),
-  loanPeriodDays: z.number().int().min(1).max(30),
+  loanPeriodDays: z.number().int().min(1).max(14),
   lab: labRefSchema,
   availableCount: z.number().int().min(0),
 });

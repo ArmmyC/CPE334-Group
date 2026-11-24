@@ -22,7 +22,7 @@ Existing data: an equipment type can already hold a period from 15 to 30 days. T
 - API `POST /api/custodian/equipment-types` and `PATCH /api/custodian/equipment-types/:id`: `loanPeriodDays` of 15 or more returns 400 `VALIDATION_ERROR` with the field message `Loan period must be from 1 to 14 days.` and nothing changes. 1 and 14 are accepted. 0 and non-integers stay refused with the existing messages.
 - Read schemas (catalog, custodian list): the number is 1 to 14.
 - Database: `equipment_type_loan_period_days_check` becomes `BETWEEN 1 AND 14`. An insert or update of 15 is refused.
-- UI (F-12 form): the field message shows the new range. The input `max` is 14.
+- UI (F-12 form): the field message shows the new range. The form keeps its own validation, so no `max` attribute is added to the input (a native `max` would block the submit before the page can show its message).
 - Renewal (F-16) adds the type's loan period to the due date, so a renewal is at most 14 days. This is a consequence, not a separate change.
 
 ## 4. Boundaries and invalid cases
@@ -49,7 +49,7 @@ Access: unchanged. Only a CUSTODIAN of the type's lab can create or edit (BR-15)
 | System checks | `sprint-1/system-checks.md` (check row, AC-SR03-02, TEST-SR03-02) | boundary 30 becomes 14, refused 31 becomes 15 |
 | AC | AC-SR03-02, AC-F12-03 | boundaries change. AC-F04-03 (due date) does not change |
 | STS | TEST-SR03-02, TEST-F12-03 and the F-12 create/PATCH range tests, TEST-F12-07 (UI message) | boundaries change; a new test for the data migration |
-| Code | `shared/src/equipment-types.ts`, `shared/src/catalog.ts`, `client/src/EquipmentTypesPage.tsx` (input max) | `max(30)` becomes `max(14)`, messages |
+| Code | `shared/src/equipment-types.ts`, `shared/src/catalog.ts` | `max(30)` becomes `max(14)`, messages |
 | Persistence | new migration | lower types above 14 to 14, replace the check |
 | History | `status_history`, loans | not touched |
 | Callers | checkout (`dueDateFor`), renewal (`addDays`) | read the stored period; no code change |

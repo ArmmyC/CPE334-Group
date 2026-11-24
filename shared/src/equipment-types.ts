@@ -11,10 +11,10 @@ const text = (label: string, max: number) =>
     .max(max, `${label} must be at most ${max} characters.`);
 
 const loanPeriodDays = z
-  .number({ error: 'Loan period must be a whole number from 1 to 30.' })
-  .int('Loan period must be a whole number from 1 to 30.')
-  .min(1, 'Loan period must be from 1 to 30 days.')
-  .max(30, 'Loan period must be from 1 to 30 days.');
+  .number({ error: 'Loan period must be a whole number from 1 to 14.' })
+  .int('Loan period must be a whole number from 1 to 14.')
+  .min(1, 'Loan period must be from 1 to 14 days.')
+  .max(14, 'Loan period must be from 1 to 14 days.');
 
 // The fields of an edit. The lab of an existing type cannot change.
 export const equipmentTypeEditBodySchema = z.object({
@@ -41,7 +41,7 @@ export const custodianEquipmentTypeSchema = z.object({
   name: z.string(),
   category: z.string(),
   description: z.string(),
-  loanPeriodDays: z.number().int().min(1).max(30),
+  loanPeriodDays: z.number().int().min(1).max(14),
   lab: labRefSchema,
 });
 

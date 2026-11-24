@@ -105,7 +105,7 @@ model EquipmentType {
   name           String
   category       String
   description    String
-  // BR-05: 1 to 30 days, enforced by a check constraint in the migration.
+  // BR-05: 1 to 14 days (CR-L7-01), enforced by a check constraint in the migration.
   loanPeriodDays Int    @default(7) @map("loan_period_days")
 
   lab      Lab             @relation(fields: [labId], references: [id], onDelete: Restrict)
