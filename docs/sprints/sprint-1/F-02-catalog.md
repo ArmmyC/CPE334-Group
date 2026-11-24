@@ -74,7 +74,7 @@ Type detail response:
 
 `{ id, name, category, description, loanPeriodDays, lab: { id, name }, availableCount }`
 
-`loanPeriodDays` is the integer 1 to 30 from BR-05. `availableCount` is a whole number of 0 or more.
+`loanPeriodDays` is the integer 1 to 14 from BR-05 (CR-L7-01). `availableCount` is a whole number of 0 or more.
 
 Error codes used by this feature are `VALIDATION_ERROR`, `UNAUTHENTICATED`, `FORBIDDEN`, and `NOT_FOUND`, all in the shared shape from F-01.
 

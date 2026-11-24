@@ -73,7 +73,7 @@ flowchart LR
 | BR-02 copy must be Available, of the requested type, in the same lab | Checkout reads the copy inside the transaction and compares type and status | Foreign keys from copy to type and type to lab |
 | BR-03 request needs an Available copy | Request service counts Available copies before inserting | None, because BR-17 lets the count change before checkout |
 | BR-04 one Pending request or active loan per type per borrower | Request service locks the borrower's `user` row, then checks both inside the transaction (section 2.5) | Partial unique index on `borrow_request(borrower_id, equipment_type_id) WHERE status = 'PENDING'` |
-| BR-05 loan period and due date | Checkout computes the due date (section 8) | Column default 7 and `CHECK (loan_period_days BETWEEN 1 AND 30)` |
+| BR-05 loan period and due date | Checkout computes the due date (section 8) | Column default 7 and `CHECK (loan_period_days BETWEEN 1 AND 14)` (CR-L7-01) |
 | BR-06, BR-07, BR-08 allowed status changes | A transition table per entity in the service, used by every state change | Conditional updates include the expected old status in the `WHERE` clause |
 | BR-12 unique asset tags | Service maps the violation to a 409 error (section 2.5) | Unique index on `copy(asset_tag)` |
 | BR-15, BR-16 access scope | Every query is filtered by the session user (section 6) | Ownership columns are `NOT NULL` foreign keys |
@@ -135,7 +135,7 @@ All tables use an integer identity primary key `id`, and timestamps are `timesta
 | `session` | `user_id`, `token_hash`, `created_at`, `last_used_at`, `expires_at` | `token_hash` unique. `expires_at` is `created_at` plus 24 hours. Deleted on logout. See section 7. |
 | `lab` | `name` | `name` unique |
 | `lab_assignment` | `lab_id`, `custodian_id` | Primary key (`lab_id`, `custodian_id`). The service only assigns users with role `CUSTODIAN`. |
-| `equipment_type` | `lab_id`, `name`, `category`, `description`, `loan_period_days` | Unique (`lab_id`, `name`). `loan_period_days` default 7, check 1 to 30 (BR-05). |
+| `equipment_type` | `lab_id`, `name`, `category`, `description`, `loan_period_days` | Unique (`lab_id`, `name`). `loan_period_days` default 7, check 1 to 14 (BR-05, CR-L7-01). |
 | `copy` | `equipment_type_id`, `asset_tag`, `status` (`AVAILABLE`, `ON_LOAN`, `IN_MAINTENANCE`, `RETIRED`) | `asset_tag` unique (BR-12). The lab of a copy is the lab of its type, so a copy cannot be in a different lab from its type. |
 | `borrow_request` | `borrower_id`, `equipment_type_id`, `purpose` (optional, up to 500 characters), `status` (`PENDING`, `FULFILLED`, `REJECTED`, `CANCELLED`), `rejection_reason` (Sprint 2), `created_at`, `decided_at`, `decided_by_id` | Partial unique index for BR-04. `rejection_reason` is required when status is `REJECTED` (check constraint, Sprint 2). |
 | `loan` | `request_id`, `copy_id`, `borrower_id`, `checked_out_at`, `checked_out_by_id`, `due_date` (`date`), `status` (`ACTIVE`, `RETURNED`), `returned_at`, `returned_by_id`, `return_note` (Sprint 2), `renewed_at` (Sprint 3) | `request_id` unique, so a request has at most one loan. Partial unique index for BR-01. `due_date` is a calendar date, not a timestamp (section 8). |

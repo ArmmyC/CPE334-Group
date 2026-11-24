@@ -88,7 +88,7 @@ Design: SDS sections 3.2 and 3.5
 
 | Constraint | SQL | Rule |
 | --- | --- | --- |
-| Loan period range | `CHECK (loan_period_days BETWEEN 1 AND 30)` on `equipment_type` | BR-05 |
+| Loan period range | `CHECK (loan_period_days BETWEEN 1 AND 14)` on `equipment_type` | BR-05 |
 | One active loan per copy | Unique index on `loan(copy_id) WHERE status = 'ACTIVE'` | BR-01 |
 | One Pending request per borrower and type | Unique index on `borrow_request(borrower_id, equipment_type_id) WHERE status = 'PENDING'` | BR-04 |
 | Lower-case email | `CHECK (email = lower(email))` on `user` | SDS 3.2 |
@@ -109,7 +109,7 @@ Design: SDS sections 3.2 and 3.5
 | AC | Requirements | Observable outcome |
 | --- | --- | --- |
 | AC-SR03-01 | BR-12 | The database refuses a second copy with an existing asset tag. |
-| AC-SR03-02 | BR-05 | The database accepts loan periods of 1 and 30 days, refuses 0 and 31, and sets 7 days when none is given. |
+| AC-SR03-02 | BR-05 | The database accepts loan periods of 1 and 14 days, refuses 0 and 15, and sets 7 days when none is given. |
 | AC-SR03-03 | NFR-09 | A fresh clone reaches the running app with seed data in at most 6 documented commands. |
 | AC-SR03-04 | BR-01, BR-04 | The database refuses a second active loan for one copy and a second Pending request for one borrower and type. It accepts a new one once the earlier loan is returned or the earlier request is no longer Pending. |
 
@@ -120,7 +120,7 @@ All database integration tests run against the test database. Each test file sta
 | Test | AC | Level | Precondition or input | Action | Expected result |
 | --- | --- | --- | --- | --- | --- |
 | TEST-SR03-01 | AC-SR03-01 | Database integration | A copy with asset tag `EMB-0001` exists | Insert another copy with asset tag `EMB-0001`, for the same type and for another type | Both inserts fail with `P2002` on `asset_tag`, and one copy with that tag remains |
-| TEST-SR03-02 | AC-SR03-02 | Database integration | A lab exists | Insert equipment types with loan periods 1, 30, 0, and 31, and one without a loan period | 1 and 30 are stored. 0 and 31 fail the check constraint and store nothing. The one without a value has 7. |
+| TEST-SR03-02 | AC-SR03-02 | Database integration | A lab exists | Insert equipment types with loan periods 1, 14, 0, and 15, and one without a loan period | 1 and 14 are stored. 0 and 15 fail the check constraint and store nothing. The one without a value has 7. |
 | TEST-SR03-03 | AC-SR03-03 | Manual, recorded for the release | A fresh clone with Docker running | Follow the README setup and run commands | The app opens on port 5190, a seeded borrower signs in and sees the seeded catalog, and a seeded custodian gets 403 from the catalog, because F-02 makes it borrower only. The count of commands is recorded and is at most 6. |
 | TEST-SR03-04 | AC-SR03-04 | Database integration | A borrower, a type, two copies, and requests to link the loans to | Insert a second `ACTIVE` loan for a copy that has one. Then mark the first loan `RETURNED` and insert again. Insert a second `PENDING` request for the same borrower and type. Then mark the first `CANCELLED` and insert again. | The second active loan and the second Pending request fail with unique violations. After the first record changes status, the new insert succeeds. A Pending request for another type or another borrower is never refused. |
 

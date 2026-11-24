@@ -63,7 +63,7 @@ Issue: #2
 | --- | --- | --- | --- | --- |
 | SR-01 | Server-side authorization. Every protected endpoint requires a valid session, checks the role, and limits records to the borrower's own or the custodian's assigned labs. A hidden button is not authorization. | BR-15, BR-16, NFR-02, NFR-03 | Sprint 1 | Every sprint, for each new endpoint |
 | SR-02 | One API error shape and consistent UI states. Every error uses `{ "error": { "code", "message", "fields" } }`. Forms show field messages, and list screens show loading, empty, and error states. | NFR-07 | Sprint 1 | Every sprint, for each new form and list |
-| SR-03 | Data model, migrations, and reproducible seed. The schema enforces unique asset tags and loan periods of 1 to 30 days, and a fresh clone reaches seeded data in at most 6 commands. | BR-05 (database constraint), BR-12, NFR-09 | Sprint 1 | Each release |
+| SR-03 | Data model, migrations, and reproducible seed. The schema enforces unique asset tags and loan periods of 1 to 14 days (CR-L7-01), and a fresh clone reaches seeded data in at most 6 commands. | BR-05 (database constraint), BR-12, NFR-09 | Sprint 1 | Each release |
 | SR-04 | Durable storage. Requests, loans, and copy statuses survive a restart and a redeployment. | NFR-10 | Sprint 1 (local restart) | Sprint 2 on GCP (Lab 5), Sprint 3 |
 | SR-05 | CI quality gate. Every pull request runs lint, build, and tests, and a failing check blocks the merge. | NFR-11 | Sprint 2 (Lab 5) | Sprint 3 |
 | SR-06 | Test coverage of domain logic. Request, checkout, return, and rule services have at least 80% line coverage. | NFR-12 | Sprint 2 | Sprint 2 |
