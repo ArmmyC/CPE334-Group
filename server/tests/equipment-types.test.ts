@@ -136,7 +136,8 @@ describe('TEST-F12-03 validation (AC-F12-03, BR-05)', () => {
 
     for (const [field, value] of [
       ['loanPeriodDays', 0],
-      ['loanPeriodDays', 31],
+      ['loanPeriodDays', 15],
+      ['loanPeriodDays', 30],
       ['loanPeriodDays', 7.5],
       ['loanPeriodDays', '7'],
       ['name', ''],
@@ -163,7 +164,7 @@ describe('TEST-F12-03 validation (AC-F12-03, BR-05)', () => {
     });
   });
 
-  it('defaults an omitted loan period to 7 on create and accepts 1 and 30', async () => {
+  it('defaults an omitted loan period to 7 on create and accepts 1 and 14', async () => {
     const { app, cookie, labA } = await setUp();
 
     const defaulted = await post(app, cookie, { ...valid, labId: labA.id });
@@ -173,16 +174,25 @@ describe('TEST-F12-03 validation (AC-F12-03, BR-05)', () => {
       labId: labA.id,
       loanPeriodDays: 1,
     });
-    const thirty = await post(app, cookie, {
+    const fourteen = await post(app, cookie, {
       ...valid,
-      name: 'Thirty',
+      name: 'Fourteen',
       labId: labA.id,
-      loanPeriodDays: 30,
+      loanPeriodDays: 14,
     });
 
     expect(defaulted.body.loanPeriodDays).toBe(7);
     expect(one.status).toBe(201);
-    expect(thirty.status).toBe(201);
+    expect(fourteen.status).toBe(201);
+  });
+
+  it('says the allowed range is 1 to 14 days when the period is too long', async () => {
+    const { app, cookie, labA } = await setUp();
+
+    const response = await post(app, cookie, { ...valid, labId: labA.id, loanPeriodDays: 15 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.fields.loanPeriodDays).toContain('1 to 14');
   });
 
   it('refuses a missing lab id and a missing edit field', async () => {

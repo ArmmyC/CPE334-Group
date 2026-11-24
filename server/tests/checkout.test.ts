@@ -258,14 +258,14 @@ describe('TEST-F04-02 checkout creates the loan (AC-F04-02, FR-09, BR-08)', () =
   it('uses the loan period of the type', async () => {
     const app = createTestApp({ clock: fixedClock(new Date('2026-11-08T03:00:00.000Z')) });
     const { lab, type } = await setUpLab();
-    await prisma.equipmentType.update({ where: { id: type.id }, data: { loanPeriodDays: 30 } });
+    await prisma.equipmentType.update({ where: { id: type.id }, data: { loanPeriodDays: 14 } });
     const { cookie } = await signIn(app, 'CUSTODIAN', [lab.id]);
     const req = await pendingRequest(type.id);
     const copy = await createCopy(type.id);
 
     const response = await checkout(app, cookie, req.id, { copyId: copy.id });
 
-    expect(response.body.dueDate).toBe('2026-12-08');
+    expect(response.body.dueDate).toBe('2026-11-22');
   });
 });
 

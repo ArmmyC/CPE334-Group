@@ -50,14 +50,14 @@ describe('TEST-SR03-02 loan period range (AC-SR03-02, BR-05)', () => {
     });
   }
 
-  it('accepts the boundaries 1 and 30 days', async () => {
+  it('accepts the boundaries 1 and 14 days', async () => {
     const lab = await createLab();
 
     expect((await createType(lab.id, 1)).loanPeriodDays).toBe(1);
-    expect((await createType(lab.id, 30)).loanPeriodDays).toBe(30);
+    expect((await createType(lab.id, 14)).loanPeriodDays).toBe(14);
   });
 
-  it.each([0, 31])('refuses %i days and stores nothing', async (days) => {
+  it.each([0, 15])('refuses %i days and stores nothing', async (days) => {
     const lab = await createLab();
 
     await expect(createType(lab.id, days)).rejects.toThrow(/equipment_type_loan_period_days_check/);

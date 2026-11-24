@@ -155,11 +155,11 @@ describe('TEST-F12-07 the equipment types page (AC-F12-07, FR-15, BR-05)', () =>
     const dialog = await screen.findByRole('dialog', { name: 'Edit Oscilloscope' });
     const period = within(dialog).getByLabelText('Loan period (days)');
     await userEvent.clear(period);
-    await userEvent.type(period, '40');
+    await userEvent.type(period, '15');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     expect(
-      await within(dialog).findByText('Loan period must be from 1 to 30 days.'),
+      await within(dialog).findByText('Loan period must be from 1 to 14 days.'),
     ).toBeInTheDocument();
     expect(sent(fetchMock, 'PATCH')).toHaveLength(0);
   });
