@@ -175,3 +175,60 @@ describe('TEST-F08-05 the borrower sees the rejection reason (AC-F08-05, FR-11)'
     expect(row.getByText(/Out for repair\./)).toBeInTheDocument();
   });
 });
+
+describe('TEST-F08-09 an ended session and an unreadable success (SDS 4.2)', () => {
+  const expired = () => errorBody(401, 'UNAUTHENTICATED', 'Sign in to continue.');
+
+  async function confirmReject() {
+    await userEvent.click(await screen.findByRole('button', { name: 'Reject Oscilloscope' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Reason'), 'Late.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Confirm reject' }));
+    return dialog;
+  }
+
+  it('checks the session again when the reject answers 401', async () => {
+    let signedIn = true;
+    stubApi({
+      'GET /api/auth/me': () => (signedIn ? json(custodian) : expired()),
+      [LIST]: () => json({ items: [oscilloscope] }),
+      [REJECT]: () => {
+        signedIn = false;
+        return expired();
+      },
+    });
+    renderApp('/custodian/requests');
+    await confirmReject();
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('checks the session again when the list load answers 401', async () => {
+    let calls = 0;
+    stubApi({
+      'GET /api/auth/me': () => (++calls === 1 ? json(custodian) : expired()),
+      [LIST]: expired,
+    });
+    renderApp('/custodian/requests');
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('does not report a network failure when a 200 body is unreadable', async () => {
+    stubApi({
+      'GET /api/auth/me': () => json(custodian),
+      [LIST]: () => json({ items: [oscilloscope] }),
+      [REJECT]: () => json({ unexpected: true }),
+    });
+    renderApp('/custodian/requests');
+    const dialog = await confirmReject();
+
+    expect(
+      await within(dialog).findByText(
+        'The request went through, but the answer was unreadable. Reload to check.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText('Could not reach the server.')).toBeNull();
+  });
+});

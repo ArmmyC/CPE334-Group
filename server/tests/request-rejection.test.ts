@@ -193,3 +193,20 @@ describe('TEST-F08-06 history on rejection (AC-F08-06, FR-17)', () => {
     ).toEqual([['REQUEST', pending.id, 'PENDING', 'REJECTED', custodian.id]]);
   });
 });
+
+describe('TEST-F08-08 a Rejected row needs a reason (AC-F08-08, SDS 3.2)', () => {
+  it('is refused by the database without a reason', async () => {
+    const { borrower, typeA } = await setUp();
+
+    await expect(
+      prisma.borrowRequest.create({
+        data: {
+          borrowerId: borrower.id,
+          equipmentTypeId: typeA.id,
+          status: 'REJECTED',
+          createdAt: decideTime,
+        },
+      }),
+    ).rejects.toThrow(/borrow_request_rejection_reason_check/);
+  });
+});
