@@ -126,7 +126,7 @@ describe('TEST-F08-03 only a Pending request can be rejected (AC-F08-03, BR-06)'
     }
     const rows = await prisma.borrowRequest.findMany({ orderBy: { id: 'asc' } });
     expect(rows.map((row) => row.status)).toEqual(['FULFILLED', 'CANCELLED', 'REJECTED']);
-    expect(rows.every((row) => row.rejectionReason === null)).toBe(true);
+    expect(rows.map((row) => row.rejectionReason)).toEqual([null, null, 'Fixture reason.']);
   });
 });
 

@@ -200,7 +200,7 @@ describe('TEST-F08-09 an ended session and an unreadable success (SDS 4.2)', () 
     renderApp('/custodian/requests');
     await confirmReject();
 
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Log in' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -212,7 +212,7 @@ describe('TEST-F08-09 an ended session and an unreadable success (SDS 4.2)', () 
     });
     renderApp('/custodian/requests');
 
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Log in' })).toBeInTheDocument();
   });
 
   it('does not report a network failure when a 200 body is unreadable', async () => {

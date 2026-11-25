@@ -48,7 +48,13 @@ export function createRequest(
   status: 'PENDING' | 'FULFILLED' | 'CANCELLED' | 'REJECTED' = 'PENDING',
 ) {
   return prisma.borrowRequest.create({
-    data: { borrowerId, equipmentTypeId, status, createdAt: fixtureTime },
+    data: {
+      borrowerId,
+      equipmentTypeId,
+      status,
+      rejectionReason: status === 'REJECTED' ? 'Fixture reason.' : null,
+      createdAt: fixtureTime,
+    },
   });
 }
 

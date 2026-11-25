@@ -12,6 +12,7 @@ import {
   fetchPendingRequests,
   rejectRequest,
 } from './api';
+import { useAuth } from './auth';
 import { formatDateTime } from './MyRequestsPage';
 
 type CopiesState =
@@ -205,6 +206,7 @@ function RejectDialog({
   onDone: () => void;
   onStale: (message: string) => void;
 }) {
+  const { recheck } = useAuth();
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -235,6 +237,7 @@ function RejectDialog({
           );
           return;
         }
+        if (error.status === 401) recheck();
         if (error.fields.reason) setReasonError(error.fields.reason);
         else setMessage(error.message);
       } else {
@@ -322,6 +325,7 @@ function RejectDialog({
 // The custodian's Pending requests (F-04). The API returns only the labs the custodian is
 // assigned to, oldest first. The heading shows in every state.
 export function PendingRequestsPage() {
+  const { recheck } = useAuth();
   const [items, setItems] = useState<PendingRequest[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -337,13 +341,15 @@ export function PendingRequestsPage() {
       .then((list) => {
         if (active) setItems(list);
       })
-      .catch(() => {
-        if (active) setLoadFailed(true);
+      .catch((error: unknown) => {
+        if (!active) return;
+        if (error instanceof ApiRequestError && error.status === 401) recheck();
+        setLoadFailed(true);
       });
     return () => {
       active = false;
     };
-  }, [attempt]);
+  }, [attempt, recheck]);
 
   function handleDone(request: PendingRequest, result: CheckoutResult) {
     setSelected(null);
