@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { checkoutBodySchema } from '@cpe334-group/shared';
+import { checkoutBodySchema, rejectRequestBodySchema } from '@cpe334-group/shared';
 import { HttpError } from '../http/errors.js';
 import { validateBody } from '../http/validate.js';
 import type { CheckoutService } from './service.js';
@@ -59,5 +59,12 @@ export function checkoutHandlers({ checkout }: { checkout: CheckoutService }) {
     response.status(201).json(loan);
   };
 
-  return { listPending, listAvailableCopies, checkout: checkoutRequest };
+  // F-08. The id is checked first, so a bad id is a 404 before the body is read.
+  const rejectRequest: RequestHandler = async (request, response) => {
+    const requestId = parseId(String(request.params.id));
+    const body = validateBody(rejectRequestBodySchema, request.body);
+    response.json(await checkout.reject(response.locals.user!.id, requestId, body));
+  };
+
+  return { listPending, listAvailableCopies, checkout: checkoutRequest, reject: rejectRequest };
 }

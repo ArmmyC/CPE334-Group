@@ -12,6 +12,7 @@ import {
   healthResponseSchema,
   loanSchema,
   pendingRequestListSchema,
+  rejectRequestResultSchema,
   type AvailableCopy,
   type BorrowRequest,
   type CheckoutResult,
@@ -26,6 +27,8 @@ import {
   type Loan,
   type LoginRequest,
   type PendingRequest,
+  type RejectRequestBody,
+  type RejectRequestResult,
 } from '@cpe334-group/shared';
 
 // An API error in the shared shape (SDS 5.3), with `fields` for validation errors.
@@ -59,6 +62,23 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
     );
   }
   return response;
+}
+
+// A 2xx answer whose body does not match the schema. The server already acted, so this is not
+// a network failure and must not be reported as one.
+async function readAnswer<T>(
+  response: Response,
+  schema: { parse: (value: unknown) => T },
+): Promise<T> {
+  try {
+    return schema.parse(await response.json());
+  } catch {
+    throw new ApiRequestError(
+      response.status,
+      'UNREADABLE_ANSWER',
+      'The request went through, but the answer was unreadable. Reload to check.',
+    );
+  }
 }
 
 export async function fetchHealth(): Promise<HealthResponse> {
@@ -142,6 +162,18 @@ export async function checkoutCopy(requestId: number, copyId: number): Promise<C
     body: JSON.stringify({ copyId }),
   });
   return checkoutResultSchema.parse(await response.json());
+}
+
+// F-08 reject a Pending request with a reason (SDS 5.2).
+export async function rejectRequest(
+  id: number,
+  body: RejectRequestBody,
+): Promise<RejectRequestResult> {
+  const response = await send(`/api/custodian/requests/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return readAnswer(response, rejectRequestResultSchema);
 }
 
 // F-06 copy maintenance status (SDS 5.2).

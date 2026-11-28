@@ -49,6 +49,7 @@ function toBorrowRequest(row: RequestRow): BorrowRequest {
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     decidedAt: row.decidedAt?.toISOString() ?? null,
+    rejectionReason: row.rejectionReason,
   };
 }
 
